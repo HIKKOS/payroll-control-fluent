@@ -47,12 +47,6 @@ class ControlIdAttendanceDatasourceImpl implements AttendanceRemoteDatasource {
               "operator": "<=",
               "value": (toTs).floor(),
             },
-            {
-              "object": "users",
-              "field": "user_id",
-              "operator": "=",
-              "value": userId,
-            },
           ],
           // Ordenamos por tiempo ascendente para facilitar el parseo
           'order_by': [
