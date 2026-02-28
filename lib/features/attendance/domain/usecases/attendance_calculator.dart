@@ -100,22 +100,23 @@ class AttendanceCalculator {
     }
 
     // ── Horario oficial del día ──────────────────────────────────────────────
-    final scheduledStart = DateTime(
+    final scheduledStart = DateTime.utc(
       date.year, date.month, date.day,
       config.workStartTime.inHours,
       config.workStartTime.inMinutes % 60,
+
     );
-    final scheduledEnd = DateTime(
+    final scheduledEnd = DateTime.utc(
       date.year, date.month, date.day,
       config.workEndTime.inHours,
       config.workEndTime.inMinutes % 60,
     );
     final lateThreshold = scheduledStart.add(Duration(minutes: config.graceMinutes));
-    final earlyLeaveThreshold = scheduledEnd.subtract(Duration(minutes: config.exitGraceMinutes));
+    final earlyLeaveThreshold = scheduledEnd.add(Duration(minutes: config.exitGraceMinutes));
 
     // ── Puntualidad ──────────────────────────────────────────────────────────
-    final isPunctualEntry = !entry.isAfter(lateThreshold);
-    final isPunctualExit  = !exit.isBefore(earlyLeaveThreshold);
+    final isPunctualEntry = entry.isBefore(lateThreshold);
+    final isPunctualExit  = exit.isAfter(earlyLeaveThreshold);
 
     // ── Horas extra ──────────────────────────────────────────────────────────
     // Entrada anticipada: minutos antes del horario oficial (no del umbral de gracia)

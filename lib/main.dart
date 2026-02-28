@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:fluent_ui/fluent_ui.dart';
+import 'package:nomina_control/core/theme/app_theme.dart';
 import 'package:nomina_control/features/device/presentation/pages/device_connection_page.dart';
 import 'injection_container.dart';
 
@@ -16,13 +17,10 @@ class NominaControlApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Control de Nómina',
+    return FluentApp(
+      title: 'NóminaControl',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-      ),
+      theme: buildAppTheme(),
       home: const DeviceConnectionPage(),
     );
   }

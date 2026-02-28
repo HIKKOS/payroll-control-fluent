@@ -28,6 +28,7 @@ dependencies:
   fpdart: ^1.2.0
   shared_preferences: ^2.3.1
   intl: ^0.20.2
+  fluent_ui: ^4.14.0
   # ── Manejo de errores funcional ───────────────────────────────────────────
 
 

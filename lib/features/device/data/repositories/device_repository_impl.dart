@@ -22,6 +22,7 @@ import '../../../../core/network/dio_client.dart';
 class DeviceRepositoryImpl implements DeviceRepository {
   DeviceRemoteDatasource? _datasource;
   DioClient? _dioClient;
+  DioClient? get dioClient => _dioClient;
 
   // ── Authenticate ──────────────────────────────────────────────────────────
 

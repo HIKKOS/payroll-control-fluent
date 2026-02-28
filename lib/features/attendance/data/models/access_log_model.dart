@@ -28,7 +28,7 @@ class AccessLogModel extends AccessLog{
     if (json['time'] != null) {
       ts = DateTime.fromMillisecondsSinceEpoch(
         (json['time'] as int) * 1000,
-        isUtc: false,
+        isUtc: true,
       );
     } else if (json['date_time'] != null) {
       ts = DateTime.parse(json['date_time'] as String);

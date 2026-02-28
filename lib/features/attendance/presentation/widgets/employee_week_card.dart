@@ -1,248 +1,171 @@
-import 'package:flutter/material.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:intl/intl.dart';
+import 'package:nomina_control/shared/widgets/dash_widgets.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/dash_widgets.dart';
 import '../../domain/entities/day_attendance.dart';
 import '../../domain/entities/week_attendance.dart';
 
-class EmployeeWeekCard extends StatelessWidget {
+class EmployeeWeekCard extends StatefulWidget {
   final WeekAttendance week;
   final VoidCallback? onTap;
 
-  const EmployeeWeekCard({
-    super.key,
-    required this.week,
-    this.onTap,
-  });
+  const EmployeeWeekCard({super.key, required this.week, this.onTap});
+
+  @override
+  State<EmployeeWeekCard> createState() => _EmployeeWeekCardState();
+}
+
+class _EmployeeWeekCardState extends State<EmployeeWeekCard> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final bonusColor = week.qualifiesForBonus ? Colors.green.shade700 : Colors.red.shade700;
+    final week = widget.week;
+    final initials = week.userName.trim().split(' ').take(2).map((w) => w[0].toUpperCase()).join();
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit:  (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Header ────────────────────────────────────────────────────
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.deepPurple.shade100,
-                    child: Text(
-                      week.userName.isNotEmpty ? week.userName[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        color: Colors.deepPurple,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          week.userName,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          '${week.completeDays} / ${week.expectedWorkDays} días completos',
-                          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // ── Badge bono ─────────────────────────────────────────────
-                  _BonusBadge(week: week),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Mini calendario semanal ───────────────────────────────────
-              _WeekDayRow(days: week.days),
-
-              const SizedBox(height: 12),
-
-              // ── Horas extra ───────────────────────────────────────────────
-              if (week.totalOvertimeMinutes > 0)
-                Row(
-                  children: [
-                    Icon(Icons.access_time_filled,
-                        size: 16, color: Colors.orange.shade700),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Tiempo extra: ${week.overtimeFormatted}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.orange.shade700,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-
-              // ── Razón pérdida de bono ─────────────────────────────────────
-              if (!week.qualifiesForBonus)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline,
-                          size: 14, color: bonusColor),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          _bonusFailMessage(week.bonusFailReason),
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: bonusColor),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _bonusFailMessage(BonusFailReason reason) {
-    switch (reason) {
-      case BonusFailReason.incompleteDays:
-        return 'Días faltantes o registros incompletos';
-      case BonusFailReason.lateEntry:
-        return 'Llegó tarde al menos un día';
-      case BonusFailReason.earlyExit:
-        return 'Salió antes de tiempo al menos un día';
-      case BonusFailReason.multiple:
-        return 'Múltiples incumplimientos';
-      case BonusFailReason.none:
-        return '';
-    }
-  }
-}
-
-// ── Sub-widgets ──────────────────────────────────────────────────────────────
-
-class _BonusBadge extends StatelessWidget {
-  final WeekAttendance week;
-
-  const _BonusBadge({required this.week});
-
-  @override
-  Widget build(BuildContext context) {
-    final qualifies = week.qualifiesForBonus;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: qualifies ? Colors.green.shade50 : Colors.red.shade50,
-        border: Border.all(
-          color: qualifies ? Colors.green.shade300 : Colors.red.shade300,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            qualifies ? Icons.star_rounded : Icons.star_border_rounded,
-            size: 14,
-            color: qualifies ? Colors.green.shade700 : Colors.red.shade700,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            qualifies ? 'Bono ✓' : 'Sin bono',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: qualifies ? Colors.green.shade700 : Colors.red.shade700,
+          decoration: BoxDecoration(
+            color: _hovered ? AppColors.bg3 : AppColors.bg2,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: _hovered
+                  ? (week.qualifiesForBonus ? AppColors.success.withOpacity(0.6) : AppColors.danger.withOpacity(0.4))
+                  : AppColors.bgBorder,
+              width: _hovered ? 1.5 : 1,
             ),
+            boxShadow: _hovered
+                ? [BoxShadow(color: AppColors.cyanGlow, blurRadius: 10)]
+                : [],
           ),
-        ],
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // ── Header ──────────────────────────────────────────────────────
+            Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.cyanGlow,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.cyan.withOpacity(0.4)),
+                ),
+                child: Center(
+                  child: Text(initials, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.cyan)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Text(week.userName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary), overflow: TextOverflow.ellipsis),
+                Text('${week.completeDays}/${week.expectedWorkDays} días', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              ])),
+              // Bono badge
+              StatusBadge(
+                label: week.qualifiesForBonus ? 'Bono ✓' : 'Sin bono',
+                variant: week.qualifiesForBonus ? BadgeVariant.success : BadgeVariant.danger,
+                icon: week.qualifiesForBonus ? FluentIcons.skype_check : FluentIcons.skype_minus,
+                compact: true,
+              ),
+            ]),
+
+            const SizedBox(height: 14),
+
+            // ── Mini calendario de días ──────────────────────────────────────
+            _WeekDayBar(days: week.days),
+
+            const SizedBox(height: 12),
+
+            // ── Footer: horas extra + razón de pérdida ────────────────────
+            Row(children: [
+              if (week.totalOvertimeMinutes > 0) ...[
+                const Icon(FluentIcons.clock, size: 12, color: AppColors.overtime),
+                const SizedBox(width: 4),
+                Text('+${week.overtimeFormatted}', style: const TextStyle(fontSize: 11, color: AppColors.overtime, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 10),
+              ],
+              if (!week.qualifiesForBonus)
+                Expanded(
+                  child: Text(
+                    _failMsg(week.bonusFailReason),
+                    style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )
+              else
+                const Expanded(child: Text('Puntualidad completa', style: TextStyle(fontSize: 10, color: AppColors.textTertiary))),
+            ]),
+          ]),
+        ),
       ),
     );
   }
+
+  String _failMsg(BonusFailReason r) => switch (r) {
+    BonusFailReason.incompleteDays => 'Falta(n) día(s) o registro(s)',
+    BonusFailReason.lateEntry      => 'Tardanza en entrada',
+    BonusFailReason.earlyExit      => 'Salida anticipada',
+    BonusFailReason.multiple       => 'Múltiples incumplimientos',
+    BonusFailReason.none           => '',
+  };
 }
 
-class _WeekDayRow extends StatelessWidget {
+// ── _WeekDayBar ───────────────────────────────────────────────────────────────
+class _WeekDayBar extends StatelessWidget {
   final List<DayAttendance> days;
-
-  const _WeekDayRow({required this.days});
+  const _WeekDayBar({required this.days});
 
   @override
   Widget build(BuildContext context) {
     final workDays = days.where((d) => d.status != DayStatus.nonWorkday).toList();
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: workDays.map((day) => _DayDot(day: day)).toList(),
+      children: workDays.map((d) => _DayCell(day: d)).toList(),
     );
   }
 }
 
-class _DayDot extends StatelessWidget {
+class _DayCell extends StatelessWidget {
   final DayAttendance day;
-
-  const _DayDot({required this.day});
+  const _DayCell({required this.day});
 
   @override
   Widget build(BuildContext context) {
-    final dayLabel = DateFormat('E', 'es_MX').format(day.date).substring(0, 2).toUpperCase();
+    final label = DateFormat('E', 'es_MX').format(day.date).substring(0, 2).toUpperCase();
 
-    Color color;
-    IconData icon;
+    final (color, icon) = switch (day.status) {
+      DayStatus.complete when day.isPunctualEntry && day.isPunctualExit =>
+      (AppColors.success, FluentIcons.check_mark),
+      DayStatus.complete =>
+      (AppColors.warning, FluentIcons.warning),
+      DayStatus.missingEntry || DayStatus.missingExit =>
+      (AppColors.warning, FluentIcons.remove),
+      DayStatus.absent =>
+      (AppColors.danger, FluentIcons.cancel),
+      DayStatus.future =>
+      (AppColors.textDisabled, FluentIcons.circle_half_full),
+      _ => (AppColors.textDisabled, FluentIcons.circle_half_full),
+    };
 
-    switch (day.status) {
-      case DayStatus.complete:
-        final allGood = day.isPunctualEntry && day.isPunctualExit;
-        color = allGood ? Colors.green : Colors.orange;
-        icon = allGood ? Icons.check_circle : Icons.warning_amber_rounded;
-        break;
-      case DayStatus.missingEntry:
-      case DayStatus.missingExit:
-        color = Colors.orange.shade700;
-        icon = Icons.remove_circle_outline;
-        break;
-      case DayStatus.absent:
-        color = Colors.red.shade400;
-        icon = Icons.cancel_outlined;
-        break;
-      case DayStatus.future:
-        color = Colors.grey.shade300;
-        icon = Icons.circle_outlined;
-        break;
-      case DayStatus.nonWorkday:
-        color = Colors.transparent;
-        icon = Icons.circle_outlined;
-        break;
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(height: 2),
-        Text(
-          dayLabel,
-          style: TextStyle(
-            fontSize: 10,
-            color: day.status == DayStatus.future ? Colors.grey : Colors.black87,
-            fontWeight: FontWeight.w500,
-          ),
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 28, height: 28,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withOpacity(0.35)),
         ),
-        if (day.overtimeMinutes > 0)
-          Text(
-            '+${day.overtimeMinutes}m',
-            style: TextStyle(fontSize: 9, color: Colors.orange.shade700),
-          ),
-      ],
-    );
+        child: Icon(icon, size: 13, color: color),
+      ),
+      const SizedBox(height: 4),
+      Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: day.status == DayStatus.future ? AppColors.textDisabled : AppColors.textSecondary)),
+      if (day.overtimeMinutes > 0)
+        Text('+${day.overtimeMinutes}m', style: const TextStyle(fontSize: 9, color: AppColors.overtime)),
+    ]);
   }
 }

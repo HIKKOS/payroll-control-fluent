@@ -28,23 +28,32 @@ class ControlIdAttendanceDatasourceImpl implements AttendanceRemoteDatasource {
     try {
       // El ControlID filtra por rango de tiempo usando unix timestamps
       final fromTs = from.millisecondsSinceEpoch ~/ 1000;
-      final toTs   = to.millisecondsSinceEpoch   ~/ 1000;
+      final toTs = to.millisecondsSinceEpoch ~/ 1000;
 
       final response = await _client.dio.post(
         AppConfig.loadObjectsEndpoint,
         data: {
-          'object': 'access_log',
-          'where': {
-            'access_log': {
-              'user_id': {'v': userId, 'op': '='},
-              'time': {
-                // Rango: from <= time <= to
-                'v': fromTs,
-                'v2': toTs,
-                'op': 'between',
-              },
+          'object': AppConfig.accessLogsObject,
+          'where': [
+            {
+              "object": "access_logs",
+              "field": "time",
+              "operator": ">=",
+              "value": (fromTs).floor(),
             },
-          },
+            {
+              "object": "access_logs",
+              "field": "time",
+              "operator": "<=",
+              "value": (toTs).floor(),
+            },
+            {
+              "object": "users",
+              "field": "user_id",
+              "operator": "=",
+              "value": userId,
+            },
+          ],
           // Ordenamos por tiempo ascendente para facilitar el parseo
           'order_by': [
             {'access_log': 'time'}
@@ -54,13 +63,14 @@ class ControlIdAttendanceDatasourceImpl implements AttendanceRemoteDatasource {
 
       if (response.statusCode == 401) throw const SessionExpiredException();
       if (response.statusCode != null && response.statusCode! >= 400) {
-        throw ServerException('Error ${response.statusCode}', statusCode: response.statusCode);
+        throw ServerException('Error ${response.statusCode}',
+            statusCode: response.statusCode);
       }
 
       final body = response.data as Map<String, dynamic>?;
       if (body == null) return [];
 
-      final rawList = body['access_log'];
+      final rawList = body[AppConfig.accessLogsObject];
       if (rawList == null || rawList is! List) return [];
 
       return rawList
