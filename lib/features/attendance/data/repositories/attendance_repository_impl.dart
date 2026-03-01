@@ -1,21 +1,21 @@
 import 'package:fpdart/fpdart.dart';
-import 'package:nomina_control/features/attendance/domain/repositories/attendance_repository.dart';
+import '../../../../core/database/access_logs_dao.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/access_log.dart';
-
+import '../../domain/repositories/attendance_repository.dart';
 import '../datasources/attendance_local_datasource.dart';
 import '../datasources/attendance_remote_datasource.dart';
 
 class AttendanceRepositoryImpl implements AttendanceRepository {
   final AttendanceRemoteDatasource _remote;
-  final AttendanceLocalDatasource _local;
+  final AttendanceLocalDatasource  _local;
 
   const AttendanceRepositoryImpl({
     required AttendanceRemoteDatasource remote,
-    required AttendanceLocalDatasource local,
+    required AttendanceLocalDatasource  local,
   })  : _remote = remote,
-        _local = local;
+        _local  = local;
 
   @override
   Future<Either<Failure, List<AccessLog>>> getAccessLogs(
@@ -23,18 +23,18 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
     try {
       final models = await _remote.getAccessLogs(
         userId: params.userId,
-        from: params.from,
-        to: params.to,
+        from:   params.from,
+        to:     params.to,
       );
-      return Right(models);
+      return right(models);
     } on SessionExpiredException {
-      return const Left(SessionExpiredFailure());
+      return  left(const SessionExpiredFailure());
     } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
+      return left(NetworkFailure(e.message));
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message, statusCode: e.statusCode));
+      return left(ServerFailure(e.message, statusCode: e.statusCode));
     } catch (e) {
-      return Left(UnexpectedFailure(e.toString()));
+      return left(UnexpectedFailure(e.toString()));
     }
   }
 
@@ -44,17 +44,19 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
     try {
       final models = await _remote.getAccessLogs(
         userId: params.userId,
-        from: params.from,
-        to: params.to,
+        from:   params.from,
+        to:     params.to,
       );
-      await _local.insertLogs(models);
-      return Right(models.length);
+
+      final weekKey = AccessLogsDao.buildWeekKey(params.from);
+      await _local.insertLogs(models, weekKey: weekKey);
+      return right(models.length);
     } on SessionExpiredException {
-      return const Left(SessionExpiredFailure());
+      return    left(const SessionExpiredFailure());
     } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
+      return left(NetworkFailure(e.message));
     } catch (e) {
-      return Left(UnexpectedFailure(e.toString()));
+      return left(UnexpectedFailure(e.toString()));
     }
   }
 
@@ -64,12 +66,12 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
     try {
       final models = await _local.getLocalLogs(
         userId: params.userId,
-        from: params.from,
-        to: params.to,
+        from:   params.from,
+        to:     params.to,
       );
-      return Right(models);
+      return right(models);
     } catch (e) {
-      return Left(UnexpectedFailure(e.toString()));
+      return left(UnexpectedFailure(e.toString()));
     }
   }
 }

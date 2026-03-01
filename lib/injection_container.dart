@@ -1,5 +1,10 @@
 import 'package:get_it/get_it.dart';
+import 'package:nomina_control/features/device/data/datasources/device_local_datasource.dart';
+import 'package:nomina_control/features/device/domain/usecases/authenticate_device_on_start.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'core/database/access_logs_dao.dart';
+import 'core/database/app_database.dart';
 import 'features/attendance/data/datasources/attendance_local_datasource.dart';
 import 'features/attendance/data/datasources/attendance_remote_datasource.dart';
 import 'features/attendance/data/repositories/attendance_repository_impl.dart';
@@ -22,59 +27,85 @@ import 'features/settings/domain/repositories/settings_repository.dart';
 final serviceLocator = GetIt.instance;
 
 Future<void> initDependencies() async {
-  // ── Externos ───────────────────────────────────────────────────────────────
+  // ── Externos ─────────────────────────────────────────────────────────────
   final prefs = await SharedPreferences.getInstance();
   serviceLocator.registerSingleton<SharedPreferences>(prefs);
 
-  // ── Settings ───────────────────────────────────────────────────────────────
-  serviceLocator.registerLazySingleton<SettingsLocalDatasource>(
-        () => SettingsLocalDatasourceImpl(serviceLocator()),
-  );
-  serviceLocator.registerLazySingleton<SettingsRepository>(
-        () => SettingsRepositoryImpl(serviceLocator()),
-  );
+  // ── Base de datos Drift ───────────────────────────────────────────────────
+  final db = AppDatabase();
+  serviceLocator.registerSingleton<AppDatabase>(db);
+  serviceLocator.registerLazySingleton<AccessLogsDao>(
+      () => AccessLogsDao(serviceLocator()));
 
-  // ── Device ─────────────────────────────────────────────────────────────────
-  serviceLocator.registerLazySingleton<DeviceRepository>(() => DeviceRepositoryImpl());
-  serviceLocator.registerLazySingleton(() => AuthenticateDevice(serviceLocator()));
+  // ── Settings ──────────────────────────────────────────────────────────────
+  serviceLocator.registerLazySingleton<SettingsLocalDatasource>(
+      () => SettingsLocalDatasourceImpl(serviceLocator()));
+  serviceLocator.registerLazySingleton<SettingsRepository>(
+      () => SettingsRepositoryImpl(serviceLocator()));
+
+  // ── Device ────────────────────────────────────────────────────────────────
+  serviceLocator.registerLazySingleton<DeviceLocalDatasource>(
+      () => DeviceLocalDatasourceImpl(serviceLocator()));
+
+  serviceLocator
+      .registerLazySingleton<DeviceRepository>(() => DeviceRepositoryImpl(
+    localDatasource:  serviceLocator(),
+  ));
+  serviceLocator
+      .registerLazySingleton(() => AuthenticateDevice(serviceLocator()));
   serviceLocator.registerLazySingleton(() => GetDeviceUsers(serviceLocator()));
   serviceLocator.registerLazySingleton(() => LogoutDevice(serviceLocator()));
-  serviceLocator.registerFactory(() => DeviceBloc(
-    authenticateDevice: serviceLocator(),
-    getDeviceUsers: serviceLocator(),
-    logoutDevice: serviceLocator(),
-  ));
+  serviceLocator.registerLazySingleton(() => AuthenticateDeviceOnStart(serviceLocator()));
+  serviceLocator.registerLazySingleton(() => DeviceBloc(
+        authenticateDevice: serviceLocator(),
+        authenticateDeviceOnStart: serviceLocator(),
+        getDeviceUsers: serviceLocator(),
+        logoutDevice: serviceLocator(),
+      )..add(const DeviceAuthRequestedOnStart()));
 
-  // ── Attendance ─────────────────────────────────────────────────────────────
+  // ── Attendance · datasources ──────────────────────────────────────────────
+  // Local: implementación real con Drift
   serviceLocator.registerLazySingleton<AttendanceLocalDatasource>(
-        () => AttendanceLocalDatasourceInMemory(),
-  );
+      () => AttendanceLocalDatasourceImpl(serviceLocator<AccessLogsDao>()));
 
-  // Registramos el datasource remoto como LazySingleton.
-  // IMPORTANTE: debe llamarse DESPUÉS del login para que dioClient no sea null.
+  // Remoto: se registra como factory porque necesita el DioClient activo.
+  // IMPORTANTE: solo se resuelve DESPUÉS del login exitoso.
   serviceLocator.registerLazySingleton<AttendanceRemoteDatasource>(() {
-    final deviceRepo = serviceLocator<DeviceRepository>() as DeviceRepositoryImpl;
-    return ControlIdAttendanceDatasourceImpl(deviceRepo.dioClient!);
+    final repo = serviceLocator<DeviceRepository>() as DeviceRepositoryImpl;
+    return ControlIdAttendanceDatasourceImpl(repo.dioClient!);
   });
 
+  // ── Attendance · repositorio + casos de uso ───────────────────────────────
   serviceLocator.registerLazySingleton<AttendanceRepository>(
-        () => AttendanceRepositoryImpl(
-      remote: serviceLocator(),
-      local: serviceLocator(),
-    ),
-  );
+      () => AttendanceRepositoryImpl(
+            remote: serviceLocator(),
+            local: serviceLocator(),
+          ));
 
   serviceLocator.registerLazySingleton(() => const AttendanceCalculator());
-  serviceLocator.registerLazySingleton(() => GetWeekAttendance(serviceLocator(), serviceLocator()));
+  serviceLocator.registerLazySingleton(
+      () => GetWeekAttendance(serviceLocator(), serviceLocator()));
   serviceLocator.registerLazySingleton(() => SyncLogsLocally(serviceLocator()));
 
   // AttendanceBloc recibe los usuarios como parámetro en tiempo de ejecución.
   serviceLocator.registerFactoryParam<AttendanceBloc, List<DeviceUser>, void>(
-        (users, _) => AttendanceBloc(
+    (users, _) => AttendanceBloc(
       getWeekAttendance: serviceLocator(),
       syncLogsLocally: serviceLocator(),
       settingsRepository: serviceLocator(),
       users: users,
     ),
   );
+
+  // Pruning automático al iniciar — limpia logs más viejos de 12 semanas
+  _schedulePruning();
+}
+
+void _schedulePruning() {
+  Future.microtask(() async {
+    try {
+      final dao = serviceLocator<AccessLogsDao>();
+      await dao.pruneOldLogs(keepWeeks: 12);
+    } catch (_) {}
+  });
 }

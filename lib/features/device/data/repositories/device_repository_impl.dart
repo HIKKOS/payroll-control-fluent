@@ -1,6 +1,6 @@
-
 import 'package:fpdart/fpdart.dart';
 import 'package:nomina_control/features/device/data/datasources/control_id_datasource_impl.dart';
+import 'package:nomina_control/features/device/data/datasources/device_local_datasource.dart';
 import 'package:nomina_control/features/device/data/datasources/device_remote_datasource.dart';
 import 'package:nomina_control/features/device/domain/entities/device_credentials.dart';
 import 'package:nomina_control/features/device/domain/entities/device_user.dart';
@@ -9,7 +9,6 @@ import 'package:nomina_control/features/device/domain/repositories/device_reposi
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/dio_client.dart';
-
 
 /// Implementación concreta del repositorio de dispositivo.
 ///
@@ -21,13 +20,22 @@ import '../../../../core/network/dio_client.dart';
 /// La UI y los casos de uso nunca ven excepciones; solo ven [Either].
 class DeviceRepositoryImpl implements DeviceRepository {
   DeviceRemoteDatasource? _datasource;
+  final DeviceLocalDatasource _localDatasource;
   DioClient? _dioClient;
+
   DioClient? get dioClient => _dioClient;
+
+  DeviceRepositoryImpl({
+    required DeviceLocalDatasource localDatasource,
+  }) : _localDatasource = localDatasource;
 
   // ── Authenticate ──────────────────────────────────────────────────────────
 
   @override
-  Future<Either<Failure, bool>> authenticate(DeviceCredentials credentials) async {
+  Future<Either<Failure, bool>> authenticate(
+    DeviceCredentials credentials, {
+    bool saveCredentials = true,
+  }) async {
     // Cada vez que el usuario intenta conectarse a un dispositivo,
     // recreamos el cliente con la nueva baseUrl.
     _dioClient = DioClient(baseUrl: credentials.baseUrl);
@@ -38,15 +46,19 @@ class DeviceRepositoryImpl implements DeviceRepository {
         login: credentials.login,
         password: credentials.password,
       );
-      return const Right(true);
+      if (saveCredentials) {
+        await _localDatasource.saveCredentials(credentials);
+      }
+      return right(true);
     } on AuthException catch (e) {
-      return Left(AuthFailure(e.message));
+      await _localDatasource.deleteCredentials();
+      return left(AuthFailure(e.message));
     } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
+      return left(NetworkFailure(e.message));
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message, statusCode: e.statusCode));
+      return left(ServerFailure(e.message, statusCode: e.statusCode));
     } catch (e) {
-      return Left(UnexpectedFailure(e.toString()));
+      return left(UnexpectedFailure(e.toString()));
     }
   }
 
@@ -55,24 +67,24 @@ class DeviceRepositoryImpl implements DeviceRepository {
   @override
   Future<Either<Failure, List<DeviceUser>>> getUsers() async {
     if (_datasource == null) {
-      return const Left(SessionExpiredFailure(
+      return left(const SessionExpiredFailure(
         'No hay conexión activa. Inicia sesión primero.',
       ));
     }
 
     try {
       final models = await _datasource!.getUsers();
-      return Right(models);
+      return right(models);
     } on SessionExpiredException {
-      return const Left(SessionExpiredFailure());
+      return left(const SessionExpiredFailure());
     } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
+      return left(NetworkFailure(e.message));
     } on ParseException catch (e) {
-      return Left(ParseFailure(e.message));
+      return left(ParseFailure(e.message));
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message, statusCode: e.statusCode));
+      return left(ServerFailure(e.message, statusCode: e.statusCode));
     } catch (e) {
-      return Left(UnexpectedFailure(e.toString()));
+      return left(UnexpectedFailure(e.toString()));
     }
   }
 
@@ -81,15 +93,31 @@ class DeviceRepositoryImpl implements DeviceRepository {
   @override
   Future<Either<Failure, bool>> logout() async {
     try {
-      await _datasource?.logout();
+      final futures = <Future<void>>[   _localDatasource.deleteCredentials()];
+      if (_datasource != null) {
+        futures.add(_datasource!.logout());
+      }
+      await Future.wait(futures);
+
       _datasource = null;
       _dioClient = null;
-      return const Right(true);
+      return right(true);
     } catch (e) {
       // El logout siempre limpia el estado local aunque falle en el servidor
       _datasource = null;
       _dioClient = null;
-      return const Right(true);
+      return right(true);
     }
+  }
+
+  @override
+  Future<Either<Failure, bool>> authenticateOnStart() async {
+    final credentials = await _localDatasource.loadCredentials();
+    if (credentials == null) {
+
+      return left(
+          const SessionExpiredFailure('No hay credenciales guardadas.'));
+    }
+    return authenticate(credentials, saveCredentials: false);
   }
 }

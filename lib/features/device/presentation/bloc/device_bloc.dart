@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nomina_control/features/device/domain/usecases/authenticate_device_on_start.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/device_credentials.dart';
 import '../../domain/entities/device_user.dart';
@@ -8,6 +9,7 @@ import '../../domain/usecases/get_device_users.dart';
 import '../../domain/usecases/logout_device.dart';
 
 part 'device_event.dart';
+
 part 'device_state.dart';
 
 /// BLoC del dispositivo de control de acceso.
@@ -26,26 +28,39 @@ class DeviceBloc extends Bloc<DeviceEvent, DeviceState> {
   final AuthenticateDevice _authenticateDevice;
   final GetDeviceUsers _getDeviceUsers;
   final LogoutDevice _logoutDevice;
-
+  final AuthenticateDeviceOnStart _authenticateDeviceOnStart;
   DeviceBloc({
     required AuthenticateDevice authenticateDevice,
+    required AuthenticateDeviceOnStart authenticateDeviceOnStart,
     required GetDeviceUsers getDeviceUsers,
     required LogoutDevice logoutDevice,
   })  : _authenticateDevice = authenticateDevice,
         _getDeviceUsers = getDeviceUsers,
+          _authenticateDeviceOnStart = authenticateDeviceOnStart,
         _logoutDevice = logoutDevice,
         super(const DeviceInitial()) {
     on<DeviceAuthRequested>(_onAuthRequested);
     on<DeviceUsersLoadRequested>(_onUsersLoadRequested);
     on<DeviceLogoutRequested>(_onLogoutRequested);
-  }
+    on<DeviceAuthRequestedOnStart>(
+        _onDeviceAuthRequestedOnStart
+    );
 
+  }
+  Future<void >_onDeviceAuthRequestedOnStart (DeviceAuthRequestedOnStart event, emit)async {
+    emit(const DeviceAuthenticating());
+    final result = await _authenticateDeviceOnStart();
+    result.fold(
+          (failure) => emit(DeviceError(message: _mapFailureToMessage(failure))),
+          (_) => emit(const DeviceAuthenticated()),
+    );
+  }
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   Future<void> _onAuthRequested(
-      DeviceAuthRequested event,
-      Emitter<DeviceState> emit,
-      ) async {
+    DeviceAuthRequested event,
+    Emitter<DeviceState> emit,
+  ) async {
     emit(const DeviceAuthenticating());
 
     final credentials = DeviceCredentials(
@@ -58,32 +73,32 @@ class DeviceBloc extends Bloc<DeviceEvent, DeviceState> {
     final result = await _authenticateDevice(credentials);
 
     result.fold(
-          (failure) => emit(DeviceError(message: _mapFailureToMessage(failure))),
-          (_) => emit(const DeviceAuthenticated()),
+      (failure) => emit(DeviceError(message: _mapFailureToMessage(failure))),
+      (_) => emit(const DeviceAuthenticated()),
     );
   }
 
   Future<void> _onUsersLoadRequested(
-      DeviceUsersLoadRequested event,
-      Emitter<DeviceState> emit,
-      ) async {
+    DeviceUsersLoadRequested event,
+    Emitter<DeviceState> emit,
+  ) async {
     emit(const DeviceUsersLoading());
 
     final result = await _getDeviceUsers();
 
     result.fold(
-          (failure) => emit(DeviceError(
+      (failure) => emit(DeviceError(
         message: _mapFailureToMessage(failure),
         requiresReconnect: failure is SessionExpiredFailure,
       )),
-          (users) => emit(DeviceUsersLoaded(users)),
+      (users) => emit(DeviceUsersLoaded(users)),
     );
   }
 
   Future<void> _onLogoutRequested(
-      DeviceLogoutRequested event,
-      Emitter<DeviceState> emit,
-      ) async {
+    DeviceLogoutRequested event,
+    Emitter<DeviceState> emit,
+  ) async {
     emit(const DeviceLoggingOut());
     await _logoutDevice();
     emit(const DeviceLoggedOut());
@@ -106,5 +121,10 @@ class DeviceBloc extends Bloc<DeviceEvent, DeviceState> {
       default:
         return 'Error inesperado. Intenta de nuevo.';
     }
+  }
+  @override
+  Future<void> close() {
+    // TODO: implement close
+    return super.close();
   }
 }

@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:nomina_control/features/device/domain/entities/device_user.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../injection_container.dart';
@@ -8,9 +9,6 @@ import '../bloc/device_bloc.dart';
 import 'device_connection_page.dart';
 import 'device_users_page.dart';
 
-/// Shell principal de la app tras autenticarse.
-/// Usa [NavigationView] con panel lateral compacto expandible —
-/// el patrón correcto para dashboards desktop en Fluent UI.
 class DeviceShellPage extends StatefulWidget {
   const DeviceShellPage({super.key});
 
@@ -19,179 +17,128 @@ class DeviceShellPage extends StatefulWidget {
 }
 
 class _DeviceShellPageState extends State<DeviceShellPage> {
-  int _selectedIndex = 0;
-
-  // Los índices deben coincidir con el orden de [NavigationView.pane.items]
-  static const int _usersIndex = 0;
-  static const int _attendanceIndex = 1;
+  int _idx = 0;
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) =>
-          serviceLocator<DeviceBloc>()..add(const DeviceUsersLoadRequested()),
-      child: BlocConsumer<DeviceBloc, DeviceState>(
-        listener: (context, state) {
-          if (state is DeviceLoggedOut) {
-            Navigator.of(context).pushAndRemoveUntil(
-              FluentPageRoute(builder: (_) => const DeviceConnectionPage()),
-              (_) => false,
-            );
-          }
-        },
-        builder: (context, state) {
-          final users =
-              state is DeviceUsersLoaded ? state.users : const <DeviceUser>[];
-
-          return NavigationView(
-            titleBar: TitleBar(
-              // Sin título en el appbar — el panel lateral lleva la marca
-              title: const SizedBox.shrink(),
-
-              endHeader: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // ── Indicador de conexión ──────────────────────────────
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.successBg,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: AppColors.success.withOpacity(0.4)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: AppColors.success,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                    color: AppColors.success.withOpacity(0.6),
-                                    blurRadius: 4)
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Text('Conectado',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.success,
-                                  fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // ── Botón logout ───────────────────────────────────────
-                    Tooltip(
-                      message: 'Cerrar sesión',
-                      child: IconButton(
-                        icon: const Icon(FluentIcons.sign_out,
-                            size: 16, color: AppColors.textSecondary),
-                        onPressed: () => context
-                            .read<DeviceBloc>()
-                            .add(const DeviceLogoutRequested()),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            pane: NavigationPane(
-              selected: _selectedIndex,
-              onChanged: (i) => setState(() => _selectedIndex = i),
-              displayMode: PaneDisplayMode.compact,
-              size: const NavigationPaneSize(openWidth: 220, compactWidth: 52),
-              header: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 16, 12, 20),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: AppColors.cyanGlow,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppColors.cyan, width: 1),
-                      ),
-                      child: const Icon(FluentIcons.fingerprint,
-                          color: AppColors.cyan, size: 15),
-                    ),
-                    const SizedBox(width: 10),
-                    const Flexible(
-                      child: Text(
-                        'NóminaControl',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          letterSpacing: -0.2,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              items: [
-                PaneItem(
-                  icon: const Icon(FluentIcons.people),
-                  title: const Text('Empleados'),
-                  body: const DeviceUsersBody(),
-                ),
-                PaneItem(
-                  icon: const Icon(FluentIcons.calendar_week),
-                  title: const Text('Semana laboral'),
-                  body: users.isEmpty
-                      ? const _LoadingBody()
-                      : AttendancePage(users: users),
-                  infoBadge: users.isNotEmpty
-                      ? InfoBadge(
-                          source: Text('${users.length}'),
-                        )
-                      : null,
-                ),
-              ],
-              footerItems: [
-                PaneItemSeparator(),
-                PaneItem(
-                  icon: const Icon(FluentIcons.settings),
-                  title: const Text('Configuración'),
-                  body: const _SettingsPlaceholder(),
-                ),
-              ],
-            ),
+    return BlocConsumer<DeviceBloc, DeviceState>(
+      listener: (ctx, state) {
+        if (state is DeviceLoggedOut) {
+          Navigator.of(ctx).pushAndRemoveUntil(
+            FluentPageRoute(builder: (_) => const DeviceConnectionPage()),
+            (_) => false,
           );
-        },
-      ),
-    );
-  }
-}
+        }
+      },
+      builder: (ctx, state) {
+        final List<DeviceUser> users =
+            state is DeviceUsersLoaded ? state.users : const [];
 
-class _LoadingBody extends StatelessWidget {
-  const _LoadingBody();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ProgressRing(),
-          SizedBox(height: 16),
-          Text('Cargando empleados…',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        ],
-      ),
+        return NavigationView(
+          titleBar: TitleBar(
+            title: const SizedBox.shrink(),
+            endHeader: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                // Indicador conectado
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: ShadNeutral.successMuted,
+                    borderRadius: BorderRadius.circular(ShadNeutral.radius),
+                    border: Border.all(color: ShadNeutral.successBorder),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Container(
+                      width: 5,
+                      height: 5,
+                      decoration: const BoxDecoration(
+                        color: ShadNeutral.success,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    const Text('Conectado',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: ShadNeutral.success,
+                            fontWeight: FontWeight.w500)),
+                  ]),
+                ),
+                const SizedBox(width: 8),
+                // Logout
+                Tooltip(
+                  message: 'Cerrar sesión',
+                  child: IconButton(
+                    icon: const Icon(LucideIcons.logOut,
+                        size: 15, color: ShadNeutral.mutedFg),
+                    onPressed: () => ctx
+                        .read<DeviceBloc>()
+                        .add(const DeviceLogoutRequested()),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+          pane: NavigationPane(
+            selected: _idx,
+            onChanged: (i) => setState(() => _idx = i),
+            displayMode: PaneDisplayMode.compact,
+            size: const NavigationPaneSize(openWidth: 210, compactWidth: 50),
+            header: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 16, 10, 20),
+              child: Row(children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: ShadNeutral.card,
+                    borderRadius: BorderRadius.circular(ShadNeutral.radiusSm),
+                    border: Border.all(color: ShadNeutral.border),
+                  ),
+                  child: const Icon(LucideIcons.fingerprintPattern,
+                      size: 13, color: ShadNeutral.foreground),
+                ),
+                const SizedBox(width: 9),
+                const Flexible(
+                    child: Text('NóminaControl',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: ShadNeutral.foreground),
+                        overflow: TextOverflow.ellipsis)),
+              ]),
+            ),
+            items: [
+              PaneItem(
+                icon: const Icon(LucideIcons.users),
+                title: const Text('Empleados'),
+                body: const DeviceUsersBody(),
+              ),
+              PaneItem(
+                icon: const Icon(LucideIcons.calendarDays),
+                title: const Text('Semana laboral'),
+                infoBadge: users.isNotEmpty
+                    ? InfoBadge(source: Text('${users.length}'))
+                    : null,
+                body: users.isEmpty
+                    ? const Center(child: ProgressRing())
+                    : AttendancePage(users: users),
+              ),
+            ],
+            footerItems: [
+              PaneItemSeparator(),
+              PaneItem(
+                icon: const Icon(LucideIcons.settings),
+                title: const Text('Configuración'),
+                body: const _SettingsPlaceholder(),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -200,10 +147,8 @@ class _SettingsPlaceholder extends StatelessWidget {
   const _SettingsPlaceholder();
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Configuración — próximamente',
-          style: TextStyle(color: AppColors.textSecondary)),
-    );
-  }
+  Widget build(BuildContext context) => const Center(
+        child: Text('Configuración — próximamente',
+            style: TextStyle(color: ShadNeutral.mutedFg, fontSize: 13)),
+      );
 }

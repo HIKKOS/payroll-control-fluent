@@ -37,3 +37,6 @@ class DeviceUsersLoadRequested extends DeviceEvent {
 class DeviceLogoutRequested extends DeviceEvent {
   const DeviceLogoutRequested();
 }
+class DeviceAuthRequestedOnStart extends DeviceEvent {
+  const DeviceAuthRequestedOnStart();
+}

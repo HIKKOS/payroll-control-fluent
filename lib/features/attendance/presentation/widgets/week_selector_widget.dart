@@ -7,7 +7,7 @@ class WeekSelectorWidget extends StatelessWidget {
   final DateTime selectedStart;
   final DateTime selectedEnd;
   final WorkScheduleConfig config;
-  final void Function(DateTime start, DateTime end) onWeekSelected;
+  final void Function(DateTime, DateTime) onWeekSelected;
 
   const WeekSelectorWidget({
     super.key,
@@ -20,29 +20,30 @@ class WeekSelectorWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final weeks = WeekRangeHelper.recentWeeks(config, count: 12);
-    final fmt = DateFormat('d MMM', 'es_MX');
+    final fmt   = DateFormat('d MMM', 'es_MX');
 
-    final selectedIdx = weeks.indexWhere((w) =>
-    w.start.year == selectedStart.year &&
+    final idx = weeks.indexWhere((w) =>
+        w.start.year  == selectedStart.year &&
         w.start.month == selectedStart.month &&
-        w.start.day == selectedStart.day);
-
-    final items = weeks.asMap().entries.map((e) {
-      final i = e.key;
-      final w = e.value;
-      final label = i == 0
-          ? 'Esta semana · ${fmt.format(w.start)} – ${fmt.format(w.end)}'
-          : '${fmt.format(w.start)} – ${fmt.format(w.end)}';
-      return ComboBoxItem<int>(value: i, child: Text(label, style: const TextStyle(fontSize: 12)));
-    }).toList();
+        w.start.day   == selectedStart.day);
 
     return ComboBox<int>(
-      value: selectedIdx >= 0 ? selectedIdx : 0,
-      items: items,
-      onChanged: (idx) {
-        if (idx == null) return;
-        final w = weeks[idx];
-        onWeekSelected(w.start, w.end);
+      value: idx >= 0 ? idx : 0,
+      items: weeks.asMap().entries.map((e) {
+        final i = e.key; final w = e.value;
+        return ComboBoxItem<int>(
+          value: i,
+          child: Text(
+            i == 0
+                ? 'Esta semana · ${fmt.format(w.start)} – ${fmt.format(w.end)}'
+                : '${fmt.format(w.start)} – ${fmt.format(w.end)}',
+            style: const TextStyle(fontSize: 12),
+          ),
+        );
+      }).toList(),
+      onChanged: (i) {
+        if (i == null) return;
+        onWeekSelected(weeks[i].start, weeks[i].end);
       },
     );
   }

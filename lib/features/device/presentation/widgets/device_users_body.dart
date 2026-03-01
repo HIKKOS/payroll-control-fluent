@@ -19,9 +19,9 @@ class DeviceUsersBody extends StatelessWidget {
         if (state is DeviceError) {
           return Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(FluentIcons.error_badge, size: 48, color: AppColors.danger),
+              const Icon(FluentIcons.error_badge, size: 48, color: ShadNeutral.destructive),
               const SizedBox(height: 16),
-              Text(state.message, style: const TextStyle(color: AppColors.textSecondary)),
+              Text(state.message, style: const TextStyle(color: ShadNeutral.mutedFg)),
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: () => context.read<DeviceBloc>().add(const DeviceUsersLoadRequested()),
@@ -63,9 +63,9 @@ class _UsersGridState extends State<_UsersGrid> {
       padding: const EdgeInsets.all(24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // ── Header ──────────────────────────────────────────────────────────
-        SectionHeader(
+        ShadSectionHeader(
           title: 'Empleados',
-          subtitle: '${widget.users.length} registrados en el dispositivo',
+
           trailing: Row(children: [
             SizedBox(
               width: 240,
@@ -73,7 +73,7 @@ class _UsersGridState extends State<_UsersGrid> {
                 placeholder: 'Buscar por nombre o registro…',
                 prefix: const Padding(
                   padding: EdgeInsets.only(left: 8),
-                  child: Icon(FluentIcons.search, size: 13, color: AppColors.textTertiary),
+                  child: Icon(FluentIcons.search, size: 13, color: ShadNeutral.muted),
                 ),
                 onChanged: (v) => setState(() => _search = v),
                 style: const TextStyle(fontSize: 12),
@@ -83,7 +83,7 @@ class _UsersGridState extends State<_UsersGrid> {
             Tooltip(
               message: 'Actualizar',
               child: IconButton(
-                icon: const Icon(FluentIcons.refresh, size: 16, color: AppColors.textSecondary),
+                icon: const Icon(FluentIcons.refresh, size: 16, color: ShadNeutral.mutedFg),
                 onPressed: () => context.read<DeviceBloc>().add(const DeviceUsersLoadRequested()),
               ),
             ),
@@ -97,7 +97,7 @@ class _UsersGridState extends State<_UsersGrid> {
             child: Center(
               child: Text(
                 _search.isEmpty ? 'Sin empleados registrados' : 'Sin resultados para "$_search"',
-                style: const TextStyle(color: AppColors.textTertiary, fontSize: 13),
+                style: const TextStyle(color: ShadNeutral.muted, fontSize: 13),
               ),
             ),
           )
@@ -149,13 +149,13 @@ class _UserCardState extends State<_UserCard> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: _hovered ? AppColors.bg3 : AppColors.bg2,
+          // color: _hovered ? ShadNeutral.bg3 : AppColors.bg2,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: _hovered ? AppColors.cyan.withOpacity(0.5) : AppColors.bgBorder,
+            // color: _hovered ? AppColors.cyan.withOpacity(0.5) : AppColors.bgBorder,
           ),
           boxShadow: _hovered
-              ? [BoxShadow(color: AppColors.cyanGlow, blurRadius: 8)]
+              ? [/*BoxShadow(color: AppColors.cyanGlow, blurRadius: 8)*/]
               : [],
         ),
         child: Row(children: [
@@ -163,16 +163,16 @@ class _UserCardState extends State<_UserCard> {
           Container(
             width: 38, height: 38,
             decoration: BoxDecoration(
-              color: AppColors.cyanGlow,
+              // color: AppColors.cyanGlow,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.cyan.withOpacity(0.5)),
+              // border: Border.all(color: AppColors.cyan.withOpacity(0.5)),
             ),
             child: Center(
               child: Text(
                 initials,
                 style: const TextStyle(
                   fontSize: 13, fontWeight: FontWeight.w700,
-                  color: AppColors.cyan, letterSpacing: -0.5,
+                  // color: AppColors.cyan, letterSpacing: -0.5,
                 ),
               ),
             ),
@@ -182,13 +182,13 @@ class _UserCardState extends State<_UserCard> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
               Text(
                 widget.user.name,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, /*color: AppColors.textPrimary*/),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
                 widget.user.registration.isNotEmpty ? '#${widget.user.registration}' : 'ID: ${widget.user.id}',
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                style: const TextStyle(fontSize: 11, /*color: AppColors.textSecondary*/),
               ),
             ]),
           ),

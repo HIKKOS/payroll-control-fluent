@@ -1,8 +1,8 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:nomina_control/shared/widgets/dash_widgets.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/dash_widgets.dart';
 import '../../../../injection_container.dart';
 import '../../../device/domain/entities/device_user.dart';
 import '../bloc/attendance_bloc.dart';
@@ -30,68 +30,48 @@ class _AttendanceBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AttendanceBloc, AttendanceState>(
-      listener: (context, state) {
+      listener: (ctx, state) {
         if (state is AttendanceSyncSuccess) {
-          displayInfoBar(context,
-            builder: (ctx, close) => InfoBar(
-              title: const Text('Descarga completada'),
-              content: Text('${state.totalRecords} registros guardados localmente.'),
-              severity: InfoBarSeverity.success,
-              onClose: close,
-            ),
-          );
+          displayInfoBar(ctx, builder: (c, close) => InfoBar(
+            title: const Text('Sync completado'),
+            content: Text('${state.totalRecords} registros guardados localmente.'),
+            severity: InfoBarSeverity.success,
+            onClose: close,
+          ));
         }
         if (state is AttendanceError) {
-          displayInfoBar(context,
-            builder: (ctx, close) => InfoBar(
-              title: const Text('Error'),
-              content: Text(state.message),
-              severity: InfoBarSeverity.error,
-              onClose: close,
-            ),
-          );
+          displayInfoBar(ctx, builder: (c, close) => InfoBar(
+            title: const Text('Error'),
+            content: Text(state.message),
+            severity: InfoBarSeverity.error,
+            onClose: close,
+          ));
         }
       },
-      builder: (context, state) {
+      builder: (ctx, state) {
         if (state is AttendanceLoading || state is AttendanceInitial) {
-          return const Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              ProgressRing(),
-              SizedBox(height: 16),
-              Text('Cargando registros…', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-            ]),
-          );
+          return const Center(child: ProgressRing());
         }
-
         if (state is AttendanceSyncing) {
-          return Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const ProgressRing(),
-              const SizedBox(height: 16),
-              Text(state.message, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-            ]),
-          );
+          return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const ProgressRing(),
+            const SizedBox(height: 16),
+            Text(state.message, style: const TextStyle(color: ShadNeutral.mutedFg, fontSize: 13)),
+          ]));
         }
-
-        if (state is AttendanceLoaded) {
-          return _LoadedLayout(state: state);
-        }
-
+        if (state is AttendanceLoaded) return _LoadedLayout(state: state);
         if (state is AttendanceError) {
-          return Center(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(FluentIcons.error_badge, size: 48, color: AppColors.danger),
-              const SizedBox(height: 16),
-              Text(state.message, style: const TextStyle(color: AppColors.textSecondary)),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: () => context.read<AttendanceBloc>().add(const AttendanceLoadCurrentWeek()),
-                child: const Text('Reintentar'),
-              ),
-            ]),
-          );
+          return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(LucideIcons.serverOff, size: 40, color: ShadNeutral.mutedFg),
+            const SizedBox(height: 14),
+            Text(state.message, style: const TextStyle(color: ShadNeutral.mutedFg)),
+            const SizedBox(height: 18),
+            ShadSecondaryButton(
+              label: 'Reintentar', icon: LucideIcons.refreshCw,
+              onPressed: () => ctx.read<AttendanceBloc>().add(const AttendanceLoadCurrentWeek()),
+            ),
+          ]));
         }
-
         return const SizedBox.shrink();
       },
     );
@@ -110,109 +90,82 @@ class _LoadedLayout extends StatelessWidget {
     final absent    = state.weekData.where((w) => w.completeDays == 0).length;
 
     return Padding(
-      padding: const EdgeInsets.all(24),
-      child: ListView(
-          shrinkWrap: true,
-            children: [
-        //
-        // // ── Header con selector de semana ──────────────────────────────────
-        Row(children: [
-          Expanded(
-            child: SectionHeader(
-              title: 'Semana laboral',
-              subtitle: state.isCurrentWeek ? 'Semana en curso' : 'Semana histórica',
-            ),
-          ),
+      padding: const EdgeInsets.all(28),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // ── Header ──────────────────────────────────────────────────────────
+        ShadSectionHeader(
+          title: 'Semana laboral',
+          description: state.isCurrentWeek ? 'Semana en curso' : 'Semana histórica',
+          trailing: Row(children: [
+            if (state.isLocalData)
+              const Padding(
+                padding: EdgeInsets.only(right: 10),
+                child: ShadBadge(
+                  label: 'Datos locales',
+                  variant: ShadBadgeVariant.neutral,
+                  icon: LucideIcons.hardDrive,
+                ),
+              ),
 
-
-          // Badge "datos locales"
-          if (state.isLocalData)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: StatusBadge(
-                label: 'Datos locales',
-                variant: BadgeVariant.neutral,
-                icon: FluentIcons.offline_storage,
+            WeekSelectorWidget(
+              selectedStart: state.weekStart,
+              selectedEnd: state.weekEnd,
+              config: state.config,
+              onWeekSelected: (s, e) => context.read<AttendanceBloc>().add(
+                AttendanceWeekSelected(weekStart: s, weekEnd: e),
               ),
             ),
-
-          // Selector de semana
-          WeekSelectorWidget(
-            selectedStart: state.weekStart,
-            selectedEnd: state.weekEnd,
-            config: state.config,
-            onWeekSelected: (s, e) => context.read<AttendanceBloc>().add(
-              AttendanceWeekSelected(weekStart: s, weekEnd: e),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Botón sync local
-          Tooltip(
-            message: 'Descargar accesos localmente',
-            child: Button(
+            const SizedBox(width: 8),
+            ShadSecondaryButton(
+              label: 'Sync local', icon: LucideIcons.cloudDownload,
               onPressed: () => context.read<AttendanceBloc>().add(const AttendanceSyncLocalRequested()),
-              child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(FluentIcons.download, size: 14),
-                SizedBox(width: 6),
-                Text('Sync local', style: TextStyle(fontSize: 12)),
-              ]),
             ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // Refresh
-          Tooltip(
-            message: 'Actualizar',
-            child: IconButton(
-              icon: const Icon(FluentIcons.refresh, size: 15, color: AppColors.textSecondary),
+            const SizedBox(width: 6),
+            ShadIconButton(
+              icon: LucideIcons.refreshCw, tooltip: 'Actualizar',
               onPressed: () => context.read<AttendanceBloc>().add(
-                AttendanceWeekSelected(weekStart: state.weekStart, weekEnd: state.weekEnd),
-              ),
+                AttendanceWeekSelected(weekStart: state.weekStart, weekEnd: state.weekEnd)),
             ),
-          ),
-        ]),
-
-        const SizedBox(height: 20),
-
-        // ── KPI tiles ──────────────────────────────────────────────────────
-        Row(children: [
-          StatTile(label: 'Con bono', value: '$withBonus / $total', accentColor: AppColors.success, icon: FluentIcons.skype_check),
-          const SizedBox(width: 12),
-          StatTile(label: 'Sin bono', value: '${total - withBonus}', accentColor: AppColors.danger, icon: FluentIcons.skype_minus),
-          const SizedBox(width: 12),
-          StatTile(label: 'Horas extra', value: '$withExtra emp.', accentColor: AppColors.overtime, icon: FluentIcons.clock),
-          const SizedBox(width: 12),
-          StatTile(label: 'Ausencias totales', value: '$absent emp.', accentColor: AppColors.warning, icon: FluentIcons.calendar),
-        ]),
-
-        const SizedBox(height: 20),
-
-        // ── Lista de empleados ──────────────────────────────────────────────
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final cols = (constraints.maxWidth / 340).floor().clamp(1, 4);
-            return GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: cols,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                mainAxisExtent: 210,
-              ),
-              itemCount: state.weekData.length,
-              itemBuilder: (_, i) {
-                final week = state.weekData[i];
-                return EmployeeWeekCard(
-                  week: week,
-                  onTap: () => EmployeeWeekDetailSheet.show(context, week, state.config),
-                );
-              },
-            );
-          },
+          ]),
         ),
+
+        const SizedBox(height: 20),
+
+        // ── KPIs ────────────────────────────────────────────────────────────
+        Row(children: [
+          ShadStatCard(label: 'Con bono',      value: '$withBonus / $total',
+              icon: LucideIcons.award,      accentColor: ShadNeutral.success),
+          const SizedBox(width: 10),
+          ShadStatCard(label: 'Sin bono',      value: '${total - withBonus}',
+              icon: LucideIcons.circleX,    accentColor: ShadNeutral.destructive),
+          const SizedBox(width: 10),
+          ShadStatCard(label: 'Horas extra',   value: '$withExtra emp.',
+              icon: LucideIcons.clock,      accentColor: ShadNeutral.overtime),
+          const SizedBox(width: 10),
+          ShadStatCard(label: 'Ausencias',     value: '$absent emp.',
+              icon: LucideIcons.calendarX2, accentColor: ShadNeutral.warning),
+        ]),
+
+        const SizedBox(height: 20),
+
+        // ── Grid de empleados ────────────────────────────────────────────────
+        Expanded(child: LayoutBuilder(builder: (_, c) {
+          final cols = (c.maxWidth / 320).floor().clamp(1, 4);
+          return GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: cols, mainAxisSpacing: 10,
+              crossAxisSpacing: 10, mainAxisExtent: 210,
+            ),
+            itemCount: state.weekData.length,
+            itemBuilder: (_, i) {
+              final w = state.weekData[i];
+              return EmployeeWeekCard(
+                week: w,
+                onTap: () => EmployeeWeekDetailSheet.show(context, w, state.config),
+              );
+            },
+          );
+        })),
       ]),
     );
   }

@@ -1,5 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nomina_control/core/theme/app_theme.dart';
+import 'package:nomina_control/features/device/presentation/bloc/device_bloc.dart';
 import 'package:nomina_control/features/device/presentation/pages/device_connection_page.dart';
 import 'injection_container.dart';
 
@@ -9,7 +11,13 @@ Future<void> main() async {
   // Inicializar el contenedor de dependencias antes de arrancar la UI
   await initDependencies();
 
-  runApp(const NominaControlApp());
+
+  runApp(MultiBlocProvider(providers:[
+      BlocProvider(
+      create: (_) => serviceLocator<DeviceBloc>(),),
+  ], child: const NominaControlApp()
+  )
+  );
 }
 
 class NominaControlApp extends StatelessWidget {

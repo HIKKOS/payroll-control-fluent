@@ -18,6 +18,9 @@ abstract class DeviceRepository {
   /// Requiere sesión activa (llamar [authenticate] primero).
   Future<Either<Failure, List<DeviceUser>>> getUsers();
 
+  Future<Either<Failure, bool>> authenticateOnStart();
+
+
   /// Cierra la sesión contra el dispositivo y limpia el estado local.
   Future<Either<Failure, bool>> logout();
 }
