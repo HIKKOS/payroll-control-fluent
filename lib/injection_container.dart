@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:nomina_control/core/theme/cubit/theme_cubit.dart';
 import 'package:nomina_control/features/device/domain/usecases/restore_device_session.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,7 +36,8 @@ Future<void> initDependencies() async {
   // ── Externos ─────────────────────────────────────────────────────────────
   final prefs = await SharedPreferences.getInstance();
   serviceLocator.registerSingleton<SharedPreferences>(prefs);
-
+  // ThemeCubit — singleton global, vive por encima de FluentApp.
+  serviceLocator.registerSingleton<ThemeCubit>(ThemeCubit(prefs));
   // ── Base de datos ─────────────────────────────────────────────────────────
   serviceLocator.registerSingleton<AppDatabase>(AppDatabase());
   serviceLocator.registerLazySingleton<AccessLogsDao>(

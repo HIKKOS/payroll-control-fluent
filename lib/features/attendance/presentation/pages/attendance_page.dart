@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:nomina_control/core/theme/app_colors.dart';
 import 'package:nomina_control/shared/widgets/dash_widgets.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../injection_container.dart';
@@ -63,18 +64,18 @@ class _AttendanceBody extends StatelessWidget {
             const SizedBox(height: 16),
             Text(state.message,
                 style:
-                    const TextStyle(color: ShadNeutral.mutedFg, fontSize: 13)),
+                      TextStyle(color: ctx.colors.mutedFg, fontSize: 13)),
           ]));
         }
         if (state is AttendanceLoaded) return _LoadedLayout(state: state);
         if (state is AttendanceError) {
           return Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(LucideIcons.serverOff,
-                size: 40, color: ShadNeutral.mutedFg),
+              Icon(LucideIcons.serverOff,
+                size: 40, color: ctx.colors.mutedFg),
             const SizedBox(height: 14),
             Text(state.message,
-                style: const TextStyle(color: ShadNeutral.mutedFg)),
+                style:   TextStyle(color: ctx.colors.mutedFg)),
             const SizedBox(height: 18),
             ShadSecondaryButton(
               label: 'Reintentar',
@@ -169,25 +170,25 @@ class _LoadedLayout extends StatelessWidget {
                         const SizedBox(width: 12),
                         Tooltip(message: state.hideAbsences
                             ? 'Se están ocultando los usuarios que no tuvieron registros en la semana seleccionada.'
-                            : 'Mostrando todos los usuarios, incluyendo los que no tuvieron registros en la semana seleccionada.',child: const Icon(LucideIcons.info, size: 14, color: ShadNeutral.mutedFg)),
+                            : 'Mostrando todos los usuarios, incluyendo los que no tuvieron registros en la semana seleccionada.',child:   Icon(LucideIcons.info, size: 14, color: context.colors.mutedFg)),
                       ],
                     ),
                     SizedBox(
                       width: MediaQuery.sizeOf(context).width * 0.3,
                       child: TextBox(
                         placeholder: 'Buscar…',
-                        prefix: const Padding(
-                            padding: EdgeInsets.only(left: 8),
+                        prefix:   Padding(
+                            padding: const EdgeInsets.only(left: 8),
                             child: Icon(LucideIcons.search,
-                                size: 13, color: ShadNeutral.mutedFg)),
+                                size: 13, color: context.colors.mutedFg)),
                         onChanged: (v) => setState(() => query = v),
-                        style: const TextStyle(
-                            fontSize: 12, color: ShadNeutral.foreground),
+                        style:   TextStyle(
+                            fontSize: 12, color: context.colors.foreground),
                         decoration: WidgetStatePropertyAll(BoxDecoration(
-                          color: ShadNeutral.card,
+                          color: context.colors.card,
                           borderRadius:
-                              BorderRadius.circular(ShadNeutral.radius),
-                          border: Border.all(color: ShadNeutral.border),
+                              BorderRadius.circular(radius),
+                          border: Border.all(color: context.colors.border),
                         )),
                       ),
                     ),
@@ -210,13 +211,13 @@ class _LoadedLayout extends StatelessWidget {
                                     ? LucideIcons.timerOff
                                     : LucideIcons.search,
                                 size: 80,
-                                color: ShadNeutral.mutedFg),
+                                color: context.colors.mutedFg),
                             Text(
                               query.isEmpty
                                   ? 'No hay registros'
                                   : 'Sin resultados para "$query"',
-                              style: const TextStyle(
-                                  color: ShadNeutral.mutedFg, fontSize: 24),
+                              style:   TextStyle(
+                                  color: context.colors.mutedFg, fontSize: 24),
                             ),
                           ]),
                     );

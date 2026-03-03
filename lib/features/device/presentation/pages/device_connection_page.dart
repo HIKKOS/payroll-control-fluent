@@ -1,6 +1,8 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:nomina_control/core/theme/app_colors.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/dash_widgets.dart';
 import '../../../../injection_container.dart';
@@ -104,20 +106,20 @@ class _ConnectionViewState extends State<_ConnectionView> {
                     Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        color: ShadNeutral.card,
-                        borderRadius: BorderRadius.circular(ShadNeutral.radius),
-                        border: Border.all(color: ShadNeutral.border),
+                        color: context.colors.card,
+                        borderRadius: BorderRadius.circular(radius),
+                        border: Border.all(color: context.colors.border),
                       ),
-                      child: const Icon(LucideIcons.fingerprintPattern, size: 18,
-                          color: ShadNeutral.foreground),
+                      child:   Icon(LucideIcons.fingerprintPattern, size: 18,
+                          color: context.colors.foreground),
                     ),
                     const SizedBox(width: 12),
-                    const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text('NóminaControl', style: TextStyle(fontSize: 18,
-                          fontWeight: FontWeight.w600, color: ShadNeutral.foreground,
+                          fontWeight: FontWeight.w600, color: context.colors.foreground,
                           letterSpacing: -0.3)),
                       Text('Control de Asistencia',
-                          style: TextStyle(fontSize: 12, color: ShadNeutral.mutedFg)),
+                          style: TextStyle(fontSize: 12, color: context.colors.mutedFg)),
                     ]),
                   ]),
                   const SizedBox(height: 32),
@@ -125,12 +127,12 @@ class _ConnectionViewState extends State<_ConnectionView> {
                   ShadCard(
                     padding: const EdgeInsets.all(24),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('Conectar dispositivo', style: TextStyle(
+                        Text('Conectar dispositivo', style: TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w600,
-                          color: ShadNeutral.foreground)),
+                          color: context.colors.foreground)),
                       const SizedBox(height: 4),
-                      const Text('Datos del ControlID en tu red local',
-                          style: TextStyle(fontSize: 12, color: ShadNeutral.mutedFg)),
+                        Text('Datos del ControlID en tu red local',
+                          style: TextStyle(fontSize: 12, color: context.colors.mutedFg)),
                       const SizedBox(height: 20),
                       const ShadDivider(),
                       const SizedBox(height: 20),
@@ -162,7 +164,7 @@ class _ConnectionViewState extends State<_ConnectionView> {
                         suffix: IconButton(
                           icon: Icon(
                             _obscure ? LucideIcons.eye : LucideIcons.eyeOff,
-                            size: 13, color: ShadNeutral.mutedFg,
+                            size: 13, color: context.colors.mutedFg,
                           ),
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
@@ -181,8 +183,8 @@ class _ConnectionViewState extends State<_ConnectionView> {
                     ]),
                   ),
                   const SizedBox(height: 16),
-                  const Center(child: Text('ControlID Flex · HTTP API',
-                      style: TextStyle(fontSize: 11, color: ShadNeutral.fgTertiary))),
+                    Center(child: Text('ControlID Flex · HTTP API',
+                      style: TextStyle(fontSize: 11, color: context.colors.fgTertiary))),
                 ],
               ),
             ),

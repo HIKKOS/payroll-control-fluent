@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:nomina_control/core/theme/app_colors.dart';
 import 'package:nomina_control/features/device/presentation/bloc/device_bloc.dart';
 import 'package:nomina_control/features/session/domain/entities/saved_session.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -60,36 +61,36 @@ class _SplashBody extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: ShadNeutral.card,
-                  borderRadius: BorderRadius.circular(ShadNeutral.radiusLg),
-                  border: Border.all(color: ShadNeutral.border),
-                  boxShadow: [ShadNeutral.shadowMd],
+                  color: context.colors.card,
+                  borderRadius: BorderRadius.circular(radiusLg),
+                  border: Border.all(color: context.colors.border),
+                  boxShadow: [context.colors.shadowMd],
                 ),
-                child: const Icon(LucideIcons.fingerprintPattern,
-                    size: 26, color: ShadNeutral.foreground),
+                child:   Icon(LucideIcons.fingerprintPattern,
+                    size: 26, color: context.colors.foreground),
               ),
               const SizedBox(height: 18),
-              const Text('NóminaControl',
+                Text('NóminaControl',
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: ShadNeutral.foreground,
+                      color: context.colors.foreground,
                       letterSpacing: -0.3)),
               const SizedBox(height: 28),
               // Spinner + mensaje
               BlocBuilder<StartupBloc, StartupState>(
                 builder: (_, state) => state is StartupChecking
-                    ? const Column(mainAxisSize: MainAxisSize.min, children: [
+                    ?  Column(mainAxisSize: MainAxisSize.min, children: [
                         SizedBox(
                             width: 18,
                             height: 18,
                             child: ProgressRing(
                                 strokeWidth: 2,
-                                activeColor: ShadNeutral.mutedFg)),
-                        SizedBox(height: 10),
-                        Text('Verificando conexión…',
+                                activeColor: context.colors.mutedFg)),
+                  const   SizedBox(height: 10),
+                       Text('Verificando conexión…',
                             style: TextStyle(
-                                fontSize: 12, color: ShadNeutral.mutedFg)),
+                                fontSize: 12, color: context.colors.mutedFg)),
                       ])
                     : const SizedBox.shrink(),
               ),

@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:nomina_control/core/theme/app_colors.dart';
 import 'package:nomina_control/features/device/domain/entities/device_user.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../injection_container.dart';
@@ -70,8 +71,8 @@ class _DeviceShellPageState extends State<DeviceShellPage> {
                     Tooltip(
                       message: 'Cerrar sesión',
                       child: IconButton(
-                        icon: const Icon(LucideIcons.logOut,
-                            size: 15, color: ShadNeutral.mutedFg),
+                        icon:   Icon(LucideIcons.logOut,
+                            size: 15, color: context.colors.mutedFg),
                         onPressed: () => ctx
                             .read<DeviceBloc>()
                             .add(const DeviceLogoutRequested()),
@@ -92,20 +93,20 @@ class _DeviceShellPageState extends State<DeviceShellPage> {
                     width: 26,
                     height: 26,
                     decoration: BoxDecoration(
-                      color: ShadNeutral.card,
-                      borderRadius: BorderRadius.circular(ShadNeutral.radiusSm),
-                      border: Border.all(color: ShadNeutral.border),
+                      color: context.colors.card,
+                      borderRadius: BorderRadius.circular(radiusSm),
+                      border: Border.all(color: context.colors.border),
                     ),
-                    child: const Icon(LucideIcons.fingerprintPattern,
-                        size: 13, color: ShadNeutral.foreground),
+                    child:   Icon(LucideIcons.fingerprintPattern,
+                        size: 13, color: context.colors.foreground),
                   ),
                   const SizedBox(width: 9),
-                  const Flexible(
+                    Flexible(
                       child: Text('NóminaControl',
                           style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: ShadNeutral.foreground),
+                              color: context.colors.foreground),
                           overflow: TextOverflow.ellipsis)),
                 ]),
               ),
@@ -156,17 +157,17 @@ class _ConnectionBadge extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
         decoration: BoxDecoration(
-          color: ShadNeutral.warningMuted,
-          borderRadius: BorderRadius.circular(ShadNeutral.radius),
-          border: Border.all(color: ShadNeutral.warningBorder),
+          color: context.colors.warningMuted,
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(color: context.colors.warningBorder),
         ),
-        child: const Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(LucideIcons.wifiOff, size: 11, color: ShadNeutral.warning),
-          SizedBox(width: 5),
+        child:   Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(LucideIcons.wifiOff, size: 11, color: context.colors.warning),
+          const SizedBox(width: 5),
           Text('Sin conexión · datos locales',
               style: TextStyle(
                   fontSize: 11,
-                  color: ShadNeutral.warning,
+                  color: context.colors.warning,
                   fontWeight: FontWeight.w500)),
         ]),
       );
@@ -174,21 +175,21 @@ class _ConnectionBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: ShadNeutral.successMuted,
-        borderRadius: BorderRadius.circular(ShadNeutral.radius),
-        border: Border.all(color: ShadNeutral.successBorder),
+        color: context.colors.successMuted,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: context.colors.successBorder),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Container(
             width: 5,
             height: 5,
-            decoration: const BoxDecoration(
-                color: ShadNeutral.success, shape: BoxShape.circle)),
+            decoration:   BoxDecoration(
+                color: context.colors.success, shape: BoxShape.circle)),
         const SizedBox(width: 5),
-        const Text('Conectado',
+          Text('Conectado',
             style: TextStyle(
                 fontSize: 11,
-                color: ShadNeutral.success,
+                color: context.colors.success,
                 fontWeight: FontWeight.w500)),
       ]),
     );
@@ -199,7 +200,7 @@ class _SettingsPlaceholder extends StatelessWidget {
   const _SettingsPlaceholder();
 
   @override
-  Widget build(BuildContext context) => const Center(
+  Widget build(BuildContext context) =>   Center(
       child: Text('Configuración — próximamente',
-          style: TextStyle(color: ShadNeutral.mutedFg, fontSize: 13)));
+          style: TextStyle(color: context.colors.mutedFg, fontSize: 13)));
 }

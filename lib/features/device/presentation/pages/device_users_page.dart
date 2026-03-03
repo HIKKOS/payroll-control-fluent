@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:nomina_control/core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/dash_widgets.dart';
 import '../bloc/device_bloc.dart';
@@ -18,12 +19,12 @@ class DeviceUsersBody extends StatelessWidget {
         if (state is DeviceError) {
           return Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(LucideIcons.wifiOff,
-                size: 40, color: ShadNeutral.mutedFg),
+              Icon(LucideIcons.wifiOff,
+                size: 40, color: context.colors.mutedFg),
             const SizedBox(height: 14),
             Text(state.message,
                 style:
-                    const TextStyle(color: ShadNeutral.mutedFg, fontSize: 13)),
+                      TextStyle(color: context.colors.mutedFg, fontSize: 13)),
             const SizedBox(height: 18),
             ShadSecondaryButton(
               label: 'Reintentar',
@@ -72,17 +73,17 @@ class _UsersGridState extends State<_UsersGrid> {
               width: 220,
               child: TextBox(
                 placeholder: 'Buscar…',
-                prefix: const Padding(
-                    padding: EdgeInsets.only(left: 8),
+                prefix:   Padding(
+                    padding:const  EdgeInsets.only(left: 8),
                     child: Icon(LucideIcons.search,
-                        size: 13, color: ShadNeutral.mutedFg)),
+                        size: 13, color: context.colors.mutedFg)),
                 onChanged: (v) => setState(() => _q = v),
-                style: const TextStyle(
-                    fontSize: 12, color: ShadNeutral.foreground),
+                style:   TextStyle(
+                    fontSize: 12, color: context.colors.foreground),
                 decoration: WidgetStatePropertyAll(BoxDecoration(
-                  color: ShadNeutral.card,
-                  borderRadius: BorderRadius.circular(ShadNeutral.radius),
-                  border: Border.all(color: ShadNeutral.border),
+                  color: context.colors.card,
+                  borderRadius: BorderRadius.circular(radius),
+                  border: Border.all(color: context.colors.border),
                 )),
               ),
             ),
@@ -102,7 +103,7 @@ class _UsersGridState extends State<_UsersGrid> {
               child: Center(
                   child: Text(
             _q.isEmpty ? 'Sin empleados' : 'Sin resultados para "$_q"',
-            style: const TextStyle(color: ShadNeutral.mutedFg, fontSize: 13),
+            style:   TextStyle(color: context.colors.mutedFg, fontSize: 13),
           )))
         else
           Expanded(child: LayoutBuilder(builder: (_, c) {
@@ -146,16 +147,16 @@ class _UserCard extends StatelessWidget {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: ShadNeutral.muted,
-            borderRadius: BorderRadius.circular(ShadNeutral.radiusSm),
-            border: Border.all(color: ShadNeutral.border),
+            color: context.colors.muted,
+            borderRadius: BorderRadius.circular(radiusSm),
+            border: Border.all(color: context.colors.border),
           ),
           child: Center(
               child: Text(initials,
-                  style: const TextStyle(
+                  style:   TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: ShadNeutral.foreground))),
+                      color: context.colors.foreground))),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -164,17 +165,17 @@ class _UserCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(user.name,
-                style: const TextStyle(
+                style:   TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: ShadNeutral.foreground),
+                    color: context.colors.foreground),
                 overflow: TextOverflow.ellipsis),
             Text(
                 user.registration.isNotEmpty
                     ? '#${user.registration}'
                     : 'ID ${user.id}',
                 style:
-                    const TextStyle(fontSize: 11, color: ShadNeutral.mutedFg)),
+                      TextStyle(fontSize: 11, color: context.colors.mutedFg)),
           ],
         )),
       ]),

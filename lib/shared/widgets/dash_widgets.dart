@@ -1,9 +1,10 @@
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:nomina_control/core/theme/app_theme.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:nomina_control/core/theme/app_colors.dart';
+import 'package:nomina_control/core/theme/cubit/theme_cubit.dart';
 
 // ─── ShadCard ────────────────────────────────────────────────────────────────
-/// Card con exactamente los tokens de shadcn: bg card, border, radius 8px,
-/// shadow sutil. Sin gradientes ni colores neón.
 class ShadCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -24,7 +25,7 @@ class ShadCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _ShadCardContent(
+    return _ShadCardInner(
       padding: padding,
       color: color,
       highlighted: highlighted,
@@ -35,7 +36,7 @@ class ShadCard extends StatelessWidget {
   }
 }
 
-class _ShadCardContent extends StatefulWidget {
+class _ShadCardInner extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final Color? color;
@@ -43,7 +44,7 @@ class _ShadCardContent extends StatefulWidget {
   final bool hoverable;
   final VoidCallback? onTap;
 
-  const _ShadCardContent({
+  const _ShadCardInner({
     required this.child,
     required this.padding,
     this.color,
@@ -53,21 +54,20 @@ class _ShadCardContent extends StatefulWidget {
   });
 
   @override
-  State<_ShadCardContent> createState() => _ShadCardContentState();
+  State<_ShadCardInner> createState() => _ShadCardInnerState();
 }
 
-class _ShadCardContentState extends State<_ShadCardContent> {
+class _ShadCardInnerState extends State<_ShadCardInner> {
   bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final base = widget.color ?? ShadNeutral.card;
-    final bg = _hovered && widget.hoverable ? ShadNeutral.cardElevated : base;
+    final c = context.colors;
+    final base = widget.color ?? c.card;
+    final bg = _hovered && widget.hoverable ? c.cardElevated : base;
     final borderColor = widget.highlighted
-        ? ShadNeutral.n400
-        : (_hovered && widget.hoverable
-            ? ShadNeutral.n700
-            : ShadNeutral.border);
+        ? c.ring
+        : (_hovered && widget.hoverable ? c.border : c.border);
 
     return MouseRegion(
       cursor:
@@ -85,9 +85,9 @@ class _ShadCardContentState extends State<_ShadCardContent> {
           padding: widget.padding,
           decoration: BoxDecoration(
             color: bg,
-            borderRadius: BorderRadius.circular(ShadNeutral.radius),
+            borderRadius: BorderRadius.circular(AppColors.radius),
             border: Border.all(color: borderColor),
-            boxShadow: [ShadNeutral.shadow],
+            boxShadow: [c.shadow],
           ),
           child: widget.child,
         ),
@@ -115,32 +115,21 @@ class ShadBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final (fg, bg, bdr) = switch (variant) {
-      ShadBadgeVariant.success => (
-          ShadNeutral.success,
-          ShadNeutral.successMuted,
-          ShadNeutral.successBorder
-        ),
-      ShadBadgeVariant.warning => (
-          ShadNeutral.warning,
-          ShadNeutral.warningMuted,
-          ShadNeutral.warningBorder
-        ),
+      ShadBadgeVariant.success => (c.success, c.successMuted, c.successBorder),
+      ShadBadgeVariant.warning => (c.warning, c.warningMuted, c.warningBorder),
       ShadBadgeVariant.destructive => (
-          ShadNeutral.destructive,
-          ShadNeutral.destructiveMuted,
-          ShadNeutral.destructiveBorder
+          c.destructive,
+          c.destructiveMuted,
+          c.destructiveBorder
         ),
       ShadBadgeVariant.overtime => (
-          ShadNeutral.overtime,
-          ShadNeutral.overtimeMuted,
-          ShadNeutral.overtimeBorder
+          c.overtime,
+          c.overtimeMuted,
+          c.overtimeBorder
         ),
-      ShadBadgeVariant.neutral => (
-          ShadNeutral.mutedFg,
-          ShadNeutral.muted,
-          ShadNeutral.border
-        ),
+      ShadBadgeVariant.neutral => (c.mutedFg, c.muted, c.border),
     };
 
     final vPad = sm ? 2.0 : 4.0;
@@ -151,50 +140,42 @@ class ShadBadge extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(ShadNeutral.radius),
+        borderRadius: BorderRadius.circular(AppColors.radius),
         border: Border.all(color: bdr),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: sm ? 10 : 12, color: fg),
-            SizedBox(width: sm ? 3 : 5),
-          ],
-          Text(
-            label,
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (icon != null) ...[
+          Icon(icon, size: sm ? 10 : 12, color: fg),
+          SizedBox(width: sm ? 3 : 5),
+        ],
+        Text(label,
             style: TextStyle(
               fontSize: fs,
               fontWeight: FontWeight.w500,
               color: fg,
               letterSpacing: 0.1,
-            ),
-          ),
-        ],
-      ),
+            )),
+      ]),
     );
   }
 }
 
 // ─── ShadLabel ───────────────────────────────────────────────────────────────
-/// Etiqueta de campo estilo shadcn: pequeña, gris media, peso medio.
 class ShadLabel extends StatelessWidget {
   final String text;
 
   const ShadLabel(this.text, {super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: ShadNeutral.fgSecondary,
-        letterSpacing: 0.1,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: context.colors.fgSecondary,
+          letterSpacing: 0.1,
+        ),
+      );
 }
 
 // ─── ShadSectionHeader ───────────────────────────────────────────────────────
@@ -212,44 +193,36 @@ class ShadSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
+    final c = context.colors;
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: ShadNeutral.foreground,
-                  letterSpacing: -0.4,
-                ),
-              ),
-              if (description != null) ...[
-                const SizedBox(height: 3),
-                Text(
-                  description!,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: ShadNeutral.mutedFg,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (trailing != null) ...[const SizedBox(width: 16), trailing!],
-      ],
-    );
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: c.foreground,
+                letterSpacing: -0.4,
+              )),
+          if (description != null) ...[
+            const SizedBox(height: 3),
+            Text(description!,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: c.mutedFg,
+                  fontWeight: FontWeight.w400,
+                )),
+          ],
+        ],
+      )),
+      if (trailing != null) ...[const SizedBox(width: 16), trailing!],
+    ]);
   }
 }
 
 // ─── ShadStatCard ────────────────────────────────────────────────────────────
-/// Tarjeta de métrica compacta. Sin gradientes — solo tipo, número y label.
 class ShadStatCard extends StatelessWidget {
   final String label;
   final String value;
@@ -266,53 +239,45 @@ class ShadStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return ShadCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(ShadNeutral.radiusSm),
-              border: Border.all(color: accentColor.withOpacity(0.2)),
-            ),
-            child: Icon(icon, size: 16, color: accentColor),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(AppColors.radiusSm),
+            border: Border.all(color: accentColor.withOpacity(0.2)),
           ),
-          const SizedBox(width: 12),
-          Column(
+          child: Icon(icon, size: 16, color: accentColor),
+        ),
+        const SizedBox(width: 12),
+        Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: accentColor,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: ShadNeutral.mutedFg,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              Text(value,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: accentColor,
+                    letterSpacing: -0.5,
+                  )),
+              Text(label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: c.mutedFg,
+                    fontWeight: FontWeight.w400,
+                  )),
+            ]),
+      ]),
     );
   }
 }
 
-// ─── ShadInput wrapper ───────────────────────────────────────────────────────
-/// Campo de texto estilo shadcn: fondo card, border neutral-800, radius 8px.
+// ─── ShadInputField ──────────────────────────────────────────────────────────
 class ShadInputField extends StatelessWidget {
   final String label;
   final String placeholder;
@@ -341,54 +306,39 @@ class ShadInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ShadLabel(label),
-        const SizedBox(height: 6),
-        TextBox(
-          controller: controller,
-          placeholder: placeholder,
-          obscureText: obscure,
-          enabled: enabled,
-          onChanged: onChanged,
-          onSubmitted: onSubmitted,
-          prefix: prefixIcon != null
-              ? Padding(
-                  padding: const EdgeInsets.only(left: 10),
-                  child: Icon(prefixIcon, size: 14, color: ShadNeutral.mutedFg),
-                )
-              : null,
-          suffix: suffix,
-          style: const TextStyle(
-            fontSize: 13,
-            color: ShadNeutral.foreground,
+    final c = context.colors;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      ShadLabel(label),
+      const SizedBox(height: 6),
+      TextBox(
+        controller: controller,
+        placeholder: placeholder,
+        obscureText: obscure,
+        enabled: enabled,
+        onChanged: onChanged,
+        onSubmitted: onSubmitted,
+        prefix: prefixIcon != null
+            ? Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: Icon(prefixIcon, size: 14, color: c.mutedFg),
+              )
+            : null,
+        suffix: suffix,
+        style: TextStyle(fontSize: 13, color: c.foreground),
+        placeholderStyle: TextStyle(fontSize: 13, color: c.fgTertiary),
+        decoration: WidgetStatePropertyAll(BoxDecoration(
+          color: c.card,
+          borderRadius: BorderRadius.circular(AppColors.radius),
+          border: Border.all(
+            color: error != null ? c.destructive : c.border,
           ),
-          placeholderStyle: const TextStyle(
-            fontSize: 13,
-            color: ShadNeutral.fgTertiary,
-          ),
-          decoration: WidgetStatePropertyAll(BoxDecoration(
-            color: ShadNeutral.card,
-            borderRadius: BorderRadius.circular(ShadNeutral.radius),
-            border: Border.all(
-              color:
-                  error != null ? ShadNeutral.destructive : ShadNeutral.border,
-            ),
-          )),
-        ),
-        if (error != null) ...[
-          const SizedBox(height: 5),
-          Text(
-            error!,
-            style: const TextStyle(
-              fontSize: 11,
-              color: ShadNeutral.destructive,
-            ),
-          ),
-        ],
+        )),
+      ),
+      if (error != null) ...[
+        const SizedBox(height: 5),
+        Text(error!, style: TextStyle(fontSize: 11, color: c.destructive)),
       ],
-    );
+    ]);
   }
 }
 
@@ -399,19 +349,16 @@ class ShadDivider extends StatelessWidget {
   const ShadDivider({super.key, this.indent});
 
   @override
-  Widget build(BuildContext context) {
-    return const Divider(
-      style: DividerThemeData(
-          thickness: 1,
-          decoration: BoxDecoration(
-            color: ShadNeutral.border,
-          )),
-    );
-  }
+  Widget build(BuildContext context) => Divider(
+          style: DividerThemeData(
+        decoration: BoxDecoration(
+          color: context.colors.border,
+        ),
+        thickness: 1,
+      ));
 }
 
 // ─── ShadPrimaryButton ───────────────────────────────────────────────────────
-/// Botón primario shadcn: fondo blanco (neutral-50), texto negro, radius 8px.
 class ShadPrimaryButton extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -430,50 +377,43 @@ class ShadPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return SizedBox(
       height: height,
       child: FilledButton(
         style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.resolveWith(
-            (s) => s.isDisabled || s.isPressed
-                ? ShadNeutral.n200
-                : s.isHovered
-                    ? ShadNeutral.n100
-                    : ShadNeutral.primary,
-          ),
-          foregroundColor: WidgetStateProperty.all(ShadNeutral.primaryFg),
-          shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(ShadNeutral.radius)),
-          ),
+          backgroundColor:
+              WidgetStateProperty.resolveWith((s) => s.isDisabled || s.isPressed
+                  ? c.primary.withOpacity(0.7)
+                  : s.isHovered
+                      ? c.primary.withOpacity(0.9)
+                      : c.primary),
+          foregroundColor: WidgetStateProperty.all(c.primaryFg),
+          shape: WidgetStateProperty.all(RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppColors.radius),
+          )),
         ),
         onPressed: loading ? null : onPressed,
         child: loading
-            ? const SizedBox(
-                width: 25,
-                height: 25,
-                child: ProgressRing(
-                  backgroundColor: Colors.transparent,
-                    strokeWidth: 4, activeColor: ShadNeutral.primaryFg),
-              )
+            ? SizedBox(
+                width: 14,
+                height: 14,
+                child: ProgressRing(strokeWidth: 2, activeColor: c.primaryFg))
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 14, color: ShadNeutral.primaryFg),
-                    const SizedBox(width: 7),
-                  ],
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: ShadNeutral.primaryFg,
-                    ),
-                  ),
-                ],
-              ),
+                    if (icon != null) ...[
+                      Icon(icon, size: 14, color: c.primaryFg),
+                      const SizedBox(width: 7),
+                    ],
+                    Text(label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: c.primaryFg,
+                        )),
+                  ]),
       ),
     );
   }
@@ -494,39 +434,34 @@ class ShadSecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return SizedBox(
       height: 36,
       child: Button(
         style: ButtonStyle(
-
           backgroundColor: WidgetStateProperty.resolveWith(
-            (s) => s.isHovered ? ShadNeutral.accent : ShadNeutral.secondary,
-          ),
+              (s) => s.isHovered ? c.accent : c.secondary),
 
-          shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(side:const
-            BorderSide(color: ShadNeutral.border),
-                borderRadius: BorderRadius.circular(ShadNeutral.radius)),
-          ),
+
+          shape: WidgetStateProperty.all(RoundedRectangleBorder(
+            side:
+            BorderSide(color: c.border),
+            borderRadius: BorderRadius.circular(AppColors.radius),
+          )),
         ),
         onPressed: onPressed,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 13, color: ShadNeutral.mutedFg),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: const TextStyle(
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: c.mutedFg),
+            const SizedBox(width: 6),
+          ],
+          Text(label,
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
-                color: ShadNeutral.foreground,
-              ),
-            ),
-          ],
-        ),
+                color: c.foreground,
+              )),
+        ]),
       ),
     );
   }
@@ -550,10 +485,37 @@ class ShadIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final btn = IconButton(
-      icon: Icon(icon, size: 15, color: color ?? ShadNeutral.mutedFg),
+      icon: Icon(icon, size: 15, color: color ?? context.colors.mutedFg),
       onPressed: onPressed,
     );
-    if (tooltip != null) return Tooltip(message: tooltip!, child: btn);
-    return btn;
+    return tooltip != null ? Tooltip(message: tooltip!, child: btn) : btn;
+  }
+}
+
+// ─── ThemeToggleButton ───────────────────────────────────────────────────────
+/// Botón de toggle de tema listo para usar en cualquier AppBar o Settings.
+/// Solo necesita acceso al ThemeCubit vía context.read.
+class ThemeToggleButton extends StatelessWidget {
+  const ThemeToggleButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final isDark = FluentTheme.of(context).brightness == Brightness.dark;
+
+    return Tooltip(
+      message: isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro',
+      child: IconButton(
+        icon: Icon(
+          isDark ? LucideIcons.sun : LucideIcons.moon,
+          size: 15,
+          color: c.mutedFg,
+        ),
+        onPressed: () {
+          // Lee el cubit desde el contexto — no importa dónde esté el widget
+          context.read<ThemeCubit>().toggle();
+        },
+      ),
+    );
   }
 }

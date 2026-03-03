@@ -51,7 +51,7 @@ class WorkScheduleConfig extends Equatable {
     this.weekEndDay = DateTime.friday,
     this.workStartTime = const Duration(hours: 8),
     this.workEndTime = const Duration(hours: 17,minutes:30),
-    this.lunchDuration = const Duration(hours: 1),
+    this.lunchDuration = const Duration(minutes: 30),
     this.graceMinutes = 5,
     this.exitGraceMinutes = 5,
     this.bonusEnabled = true,
@@ -60,7 +60,7 @@ class WorkScheduleConfig extends Equatable {
   // ── Computed helpers ───────────────────────────────────────────────────────
 
   /// Horas netas esperadas por día (descontando comida).
-  Duration get netDailyHours => workEndTime - workStartTime - lunchDuration;
+  Duration get netDailyHours => workEndTime - workStartTime;
 
   /// Límite máximo de entrada para ser puntual.
   Duration get lateThreshold => workStartTime + Duration(minutes: graceMinutes);

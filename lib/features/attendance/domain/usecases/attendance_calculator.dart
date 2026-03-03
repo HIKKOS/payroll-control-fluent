@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import '../entities/access_log.dart';
 import '../entities/day_attendance.dart';
 import '../entities/week_attendance.dart';
@@ -101,22 +103,27 @@ class AttendanceCalculator {
 
     // ── Horario oficial del día ──────────────────────────────────────────────
     final scheduledStart = DateTime.utc(
-      date.year, date.month, date.day,
+      date.year,
+      date.month,
+      date.day,
       config.workStartTime.inHours,
       config.workStartTime.inMinutes % 60,
-
     );
     final scheduledEnd = DateTime.utc(
-      date.year, date.month, date.day,
+      date.year,
+      date.month,
+      date.day,
       config.workEndTime.inHours,
       config.workEndTime.inMinutes % 60,
     );
-    final lateThreshold = scheduledStart.add(Duration(minutes: config.graceMinutes));
-    final earlyLeaveThreshold = scheduledEnd.add(Duration(minutes: config.exitGraceMinutes));
+    final lateThreshold =
+        scheduledStart.add(Duration(minutes: config.graceMinutes));
+    final earlyLeaveThreshold =
+        scheduledEnd.add(Duration(minutes: config.exitGraceMinutes));
 
     // ── Puntualidad ──────────────────────────────────────────────────────────
     final isPunctualEntry = entry.isBefore(lateThreshold);
-    final isPunctualExit  = exit.isAfter(earlyLeaveThreshold);
+    final isPunctualExit = exit.isAfter(earlyLeaveThreshold);
 
     // ── Horas extra ──────────────────────────────────────────────────────────
     // Entrada anticipada: minutos antes del horario oficial (no del umbral de gracia)
@@ -129,9 +136,16 @@ class AttendanceCalculator {
         ? exit.difference(scheduledEnd).inMinutes
         : 0;
 
-    // Las horas extra solo existen si el día es completo (entrada Y salida)
-    final overtimeMinutes = earlyEntryMinutes + lateExitMinutes;
-
+    // Las horas extra solo existen si el día es completo (entrada Y salida) y si sale después del horario oficial.
+    final overtimeMinutes = (exit.difference(entry) > config.netDailyHours)
+        ? (exit.difference(entry).inMinutes - config.netDailyHours.inMinutes)
+        : 0;
+    log(
+      'Día ${date.toIso8601String()}: entry=$entry, exit=$exit, '
+      "netDailyHours=${config.netDailyHours.inMinutes}, "
+      "difference=${exit.difference(entry).inMinutes}, "
+      'overtimeMinutes=$overtimeMinutes',
+    );
     return DayAttendance(
       date: date,
       status: DayStatus.complete,
@@ -164,14 +178,12 @@ class AttendanceCalculator {
     final hasIncompleteDays = workdays.any((d) => d.invalidatesBonus);
 
     // Regla 2: en todos los días completos debe haber sido puntual en entrada
-    final hasLateEntry = workdays
-        .where((d) => d.isComplete)
-        .any((d) => !d.isPunctualEntry);
+    final hasLateEntry =
+        workdays.where((d) => d.isComplete).any((d) => !d.isPunctualEntry);
 
     // Regla 3: en todos los días completos debe haber sido puntual en salida
-    final hasEarlyExit = workdays
-        .where((d) => d.isComplete)
-        .any((d) => !d.isPunctualExit);
+    final hasEarlyExit =
+        workdays.where((d) => d.isComplete).any((d) => !d.isPunctualExit);
 
     final failReasons = [
       if (hasIncompleteDays) BonusFailReason.incompleteDays,

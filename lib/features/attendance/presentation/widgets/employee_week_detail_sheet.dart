@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:nomina_control/core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/dash_widgets.dart';
 import '../../../settings/domain/entities/work_schedule_config.dart';
@@ -13,15 +14,15 @@ class EmployeeWeekDetailSheet {
       context: context,
       builder: (_) => ContentDialog(
         constraints: const BoxConstraints(maxWidth: 660, maxHeight: 540),
-        style: const ContentDialogThemeData(
+        style:   ContentDialogThemeData(
           decoration: BoxDecoration(
-            color: ShadNeutral.card,
-            borderRadius: BorderRadius.all(Radius.circular(ShadNeutral.radiusXl)),
-            border: Border.fromBorderSide(BorderSide(color: ShadNeutral.border)),
+            color: context.colors.card,
+            borderRadius: const BorderRadius.all(Radius.circular(radiusXl)),
+            border: Border.fromBorderSide(BorderSide(color: context.colors.border)),
           ),
-          titlePadding: EdgeInsets.fromLTRB(24, 24, 24, 0),
-          bodyPadding: EdgeInsets.fromLTRB(24, 16, 24, 0),
-          actionsPadding: EdgeInsets.fromLTRB(24, 0, 24, 20),
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+          bodyPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
         ),
         title: _DialogHeader(week: week),
         content: _DialogBody(week: week, config: config),
@@ -52,22 +53,22 @@ class _DialogHeader extends StatelessWidget {
         Container(
           width: 38, height: 38,
           decoration: BoxDecoration(
-            color: ShadNeutral.muted,
-            borderRadius: BorderRadius.circular(ShadNeutral.radius),
-            border: Border.all(color: ShadNeutral.border),
+            color: context.colors.muted,
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(color: context.colors.border),
           ),
           child: Center(child: Text(initials,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                color: ShadNeutral.foreground))),
+            style:   TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                color: context.colors.foreground))),
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min, children: [
           Text(week.userName,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600,
-                color: ShadNeutral.foreground)),
+            style:   TextStyle(fontSize: 16, fontWeight: FontWeight.w600,
+                color: context.colors.foreground)),
           Text('${week.completeDays} / ${week.expectedWorkDays} días completos',
-            style: const TextStyle(fontSize: 12, color: ShadNeutral.mutedFg)),
+            style:   TextStyle(fontSize: 12, color: context.colors.mutedFg)),
         ])),
         // Badges
         ShadBadge(
@@ -111,12 +112,12 @@ class _DialogBody extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       // Horario info
       Row(children: [
-        const Icon(LucideIcons.clock4, size: 12, color: ShadNeutral.mutedFg),
+          Icon(LucideIcons.clock4, size: 12, color: context.colors.mutedFg),
         const SizedBox(width: 6),
         Text(
           'Horario: ${_fmt(config.workStartTime)} – ${_fmt(config.workEndTime)}'
           '  ·  Gracia: ${config.graceMinutes}min entrada / ${config.exitGraceMinutes}min salida',
-          style: const TextStyle(fontSize: 11, color: ShadNeutral.mutedFg),
+          style:   TextStyle(fontSize: 11, color: context.colors.mutedFg),
         ),
       ]),
       const SizedBox(height: 14),
@@ -124,28 +125,28 @@ class _DialogBody extends StatelessWidget {
       // Tabla
       Container(
         decoration: BoxDecoration(
-          border: Border.all(color: ShadNeutral.border),
-          borderRadius: BorderRadius.circular(ShadNeutral.radius),
+          border: Border.all(color: context.colors.border),
+          borderRadius: BorderRadius.circular(radius),
         ),
         child: Column(children: [
           // Cabecera
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              color: ShadNeutral.muted,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(ShadNeutral.radius),
-                topRight: Radius.circular(ShadNeutral.radius),
+            decoration:   BoxDecoration(
+              color: context.colors.muted,
+              borderRadius:const  BorderRadius.only(
+                topLeft: Radius.circular(radius),
+                topRight: Radius.circular(radius),
               ),
             ),
-            child: Row(children: [
-              const SizedBox(width: 26),
-              const SizedBox(width: 10),
-              Expanded(flex: 3, child: _th('Día')),
-              Expanded(flex: 2, child: _th('Entrada', center: true)),
-              Expanded(flex: 2, child: _th('Salida',  center: true)),
-              Expanded(flex: 2, child: _th('Extra',   center: true)),
-              Expanded(flex: 2, child: _th('Estado',  right: true)),
+            child: const Row(children: [
+                SizedBox(width: 26),
+                SizedBox(width: 10),
+              Expanded(flex: 3, child: TH(text :'Día')),
+              Expanded(flex: 2, child: TH(text :'Entrada', center: true)),
+              Expanded(flex: 2, child: TH(text :'Salida',  center: true)),
+              Expanded(flex: 2, child: TH(text :'Extra',   center: true)),
+              Expanded(flex: 2, child: TH(text :'Estado',  right: true)),
             ]),
           ),
           // Filas
@@ -160,11 +161,25 @@ class _DialogBody extends StatelessWidget {
     ]);
   }
 
-  Widget _th(String t, {bool center = false, bool right = false}) => Text(t,
-    textAlign: center ? TextAlign.center : right ? TextAlign.right : TextAlign.left,
-    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-        color: ShadNeutral.mutedFg, letterSpacing: 0.2));
 }
+
+class TH extends StatelessWidget {
+
+  final String text;
+  final bool center;
+  final bool right;
+
+  const TH({super.key, required this.text,   this.center = false,   this.right = false});
+  @override
+  Widget build(BuildContext context) {
+    return Text(text,
+        textAlign: center ? TextAlign.center : right ? TextAlign.right : TextAlign.left,
+        style:   TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+            color: context.colors.mutedFg, letterSpacing: 0.2));
+  }
+}
+
+
 
 // ── Fila de día ────────────────────────────────────────────────────────────────
 class _DayRow extends StatelessWidget {
@@ -177,36 +192,36 @@ class _DayRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (iconData, iconColor, badgeLabel, badgeVariant) = _meta();
+    final (iconData, iconColor, badgeLabel, badgeVariant) = _meta(context);
 
     final rowBg = switch (day.status) {
-      DayStatus.absent => ShadNeutral.destructiveMuted.withOpacity(0.3),
-      DayStatus.missingEntry || DayStatus.missingExit => ShadNeutral.warningMuted.withOpacity(0.3),
+      DayStatus.absent => context.colors.destructiveMuted.withOpacity(0.3),
+      DayStatus.missingEntry || DayStatus.missingExit => context.colors.warningMuted.withOpacity(0.3),
       DayStatus.complete when !day.isPunctualEntry || !day.isPunctualExit =>
-        ShadNeutral.warningMuted.withOpacity(0.15),
+        context.colors.warningMuted.withOpacity(0.15),
       _ => Colors.transparent,
     };
 
-    final radius = isLast
+    final _radius = isLast
         ? const BorderRadius.only(
-            bottomLeft: Radius.circular(ShadNeutral.radius),
-            bottomRight: Radius.circular(ShadNeutral.radius))
+            bottomLeft: Radius.circular(radius),
+            bottomRight: Radius.circular(radius))
         : BorderRadius.zero;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: rowBg, borderRadius: radius,
-        border: isLast ? null : const Border(
-            bottom: BorderSide(color: ShadNeutral.border, width: 0.5)),
+        color: rowBg, borderRadius: _radius,
+        border: isLast ? null :   Border(
+            bottom: BorderSide(color: context.colors.border, width: 0.5)),
       ),
       child: Row(children: [
         Icon(iconData, size: 14, color: iconColor),
         const SizedBox(width: 10),
         Expanded(flex: 3, child: Text(
           _cap(dayFmt.format(day.date)),
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-              color: ShadNeutral.foreground))),
+          style:   TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+              color: context.colors.foreground))),
         Expanded(flex: 2, child: _TimeVal(
           time: day.entryTime != null ? timeFmt.format(day.entryTime!) : '—',
           ok: day.isPunctualEntry, hasTime: day.entryTime != null)),
@@ -215,32 +230,32 @@ class _DayRow extends StatelessWidget {
           ok: day.isPunctualExit, hasTime: day.exitTime != null)),
         Expanded(flex: 2, child: day.overtimeMinutes > 0
           ? Text('+${day.overtimeMinutes}m', textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-                  color: ShadNeutral.overtime))
-          : const Text('—', textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: ShadNeutral.fgTertiary))),
+              style:   TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+                  color: context.colors.overtime))
+          :   Text('—', textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: context.colors.fgTertiary))),
         Expanded(flex: 2, child: Align(alignment: Alignment.centerRight,
           child: ShadBadge(label: badgeLabel, variant: badgeVariant, sm: true))),
       ]),
     );
   }
 
-  (IconData, Color, String, ShadBadgeVariant) _meta() => switch (day.status) {
+  (IconData, Color, String, ShadBadgeVariant) _meta(BuildContext context) => switch (day.status) {
     DayStatus.complete when day.isPunctualEntry && day.isPunctualExit =>
-      (LucideIcons.circleCheck, ShadNeutral.success, 'OK', ShadBadgeVariant.success),
+      (LucideIcons.circleCheck, context.colors.success, 'OK', ShadBadgeVariant.success),
     DayStatus.complete when !day.isPunctualEntry && !day.isPunctualExit =>
-      (LucideIcons.circleAlert, ShadNeutral.warning, 'Tardanza+salida', ShadBadgeVariant.warning),
+      (LucideIcons.circleAlert, context.colors.warning, 'Tardanza+salida', ShadBadgeVariant.warning),
     DayStatus.complete when !day.isPunctualEntry =>
-      (LucideIcons.circleAlert, ShadNeutral.warning, 'Tardanza', ShadBadgeVariant.warning),
+      (LucideIcons.circleAlert, context.colors.warning, 'Tardanza', ShadBadgeVariant.warning),
     DayStatus.complete =>
-      (LucideIcons.circleAlert, ShadNeutral.warning, 'Salida early', ShadBadgeVariant.warning),
+      (LucideIcons.circleAlert, context.colors.warning, 'Salida early', ShadBadgeVariant.warning),
     DayStatus.missingEntry =>
-      (LucideIcons.circleMinus, ShadNeutral.warning, 'Sin entrada', ShadBadgeVariant.warning),
+      (LucideIcons.circleMinus, context.colors.warning, 'Sin entrada', ShadBadgeVariant.warning),
     DayStatus.missingExit =>
-      (LucideIcons.circleMinus, ShadNeutral.warning, 'Sin salida', ShadBadgeVariant.warning),
+      (LucideIcons.circleMinus, context.colors.warning, 'Sin salida', ShadBadgeVariant.warning),
     DayStatus.absent =>
-      (LucideIcons.circleX, ShadNeutral.destructive, 'Ausente', ShadBadgeVariant.destructive),
-    _ => (LucideIcons.circle, ShadNeutral.fgTertiary, 'Pendiente', ShadBadgeVariant.neutral),
+      (LucideIcons.circleX, context.colors.destructive, 'Ausente', ShadBadgeVariant.destructive),
+    _ => (LucideIcons.circle, context.colors.fgTertiary, 'Pendiente', ShadBadgeVariant.neutral),
   };
 
   String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
@@ -255,8 +270,8 @@ class _TimeVal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = !hasTime
-        ? ShadNeutral.fgTertiary
-        : ok ? ShadNeutral.foreground : ShadNeutral.warning;
+        ? context.colors.fgTertiary
+        : ok ? context.colors.foreground : context.colors.warning;
     return Text(time, textAlign: TextAlign.center,
       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: color,
           fontFeatures: const [FontFeature.tabularFigures()]));

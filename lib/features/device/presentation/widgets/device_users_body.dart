@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nomina_control/core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/dash_widgets.dart';
 import '../bloc/device_bloc.dart';
@@ -19,9 +20,9 @@ class DeviceUsersBody extends StatelessWidget {
         if (state is DeviceError) {
           return Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(FluentIcons.error_badge, size: 48, color: ShadNeutral.destructive),
+                Icon(FluentIcons.error_badge, size: 48, color: context.colors.destructive),
               const SizedBox(height: 16),
-              Text(state.message, style: const TextStyle(color: ShadNeutral.mutedFg)),
+              Text(state.message, style:   TextStyle(color: context.colors.mutedFg)),
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: () => context.read<DeviceBloc>().add(const DeviceUsersLoadRequested()),
@@ -71,9 +72,9 @@ class _UsersGridState extends State<_UsersGrid> {
               width: 240,
               child: TextBox(
                 placeholder: 'Buscar por nombre o registro…',
-                prefix: const Padding(
+                prefix:   Padding(
                   padding: EdgeInsets.only(left: 8),
-                  child: Icon(FluentIcons.search, size: 13, color: ShadNeutral.muted),
+                  child: Icon(FluentIcons.search, size: 13, color: context.colors.muted),
                 ),
                 onChanged: (v) => setState(() => _search = v),
                 style: const TextStyle(fontSize: 12),
@@ -83,7 +84,7 @@ class _UsersGridState extends State<_UsersGrid> {
             Tooltip(
               message: 'Actualizar',
               child: IconButton(
-                icon: const Icon(FluentIcons.refresh, size: 16, color: ShadNeutral.mutedFg),
+                icon:   Icon(FluentIcons.refresh, size: 16, color: context.colors.mutedFg),
                 onPressed: () => context.read<DeviceBloc>().add(const DeviceUsersLoadRequested()),
               ),
             ),
@@ -97,7 +98,7 @@ class _UsersGridState extends State<_UsersGrid> {
             child: Center(
               child: Text(
                 _search.isEmpty ? 'Sin empleados registrados' : 'Sin resultados para "$_search"',
-                style: const TextStyle(color: ShadNeutral.muted, fontSize: 13),
+                style:   TextStyle(color: context.colors.muted, fontSize: 13),
               ),
             ),
           )

@@ -1,6 +1,9 @@
+import 'dart:developer';
+
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:nomina_control/core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/dash_widgets.dart';
 import '../../domain/entities/day_attendance.dart';
@@ -27,22 +30,22 @@ class EmployeeWeekCard extends StatelessWidget {
           Container(
             width: 34, height: 34,
             decoration: BoxDecoration(
-              color: ShadNeutral.muted,
-              borderRadius: BorderRadius.circular(ShadNeutral.radiusSm),
-              border: Border.all(color: ShadNeutral.border),
+              color: context.colors.muted,
+              borderRadius: BorderRadius.circular(radiusSm),
+              border: Border.all(color: context.colors.border),
             ),
             child: Center(child: Text(initials,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                  color: ShadNeutral.foreground))),
+              style:   TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                  color: context.colors.foreground))),
           ),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min, children: [
             Text(week.userName, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
-                  color: ShadNeutral.foreground)),
+              style:   TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
+                  color: context.colors.foreground)),
             Text('${week.completeDays}/${week.expectedWorkDays} días',
-              style: const TextStyle(fontSize: 11, color: ShadNeutral.mutedFg)),
+              style:   TextStyle(fontSize: 11, color: context.colors.mutedFg)),
           ])),
           // Badge bono
           ShadBadge(
@@ -67,23 +70,23 @@ class EmployeeWeekCard extends StatelessWidget {
         // ── Footer ───────────────────────────────────────────────────────────
         Row(children: [
           if (week.totalOvertimeMinutes > 0) ...[
-            const Icon(LucideIcons.clock3, size: 11, color: ShadNeutral.overtime),
+              Icon(LucideIcons.clock3, size: 11, color: context.colors.overtime),
             const SizedBox(width: 4),
             Text('+${week.overtimeFormatted}',
-              style: const TextStyle(fontSize: 11, color: ShadNeutral.overtime,
+              style:   TextStyle(fontSize: 11, color: context.colors.overtime,
                   fontWeight: FontWeight.w500)),
             const SizedBox(width: 10),
           ],
           if (!week.qualifiesForBonus)
             Expanded(child: Text(_failMsg(week.bonusFailReason),
-              style: const TextStyle(fontSize: 10, color: ShadNeutral.mutedFg),
+              style:   TextStyle(fontSize: 10, color: context.colors.mutedFg),
               overflow: TextOverflow.ellipsis))
           else
-            const Expanded(child: Text('Puntualidad completa',
-              style: TextStyle(fontSize: 10, color: ShadNeutral.mutedFg))),
+              Expanded(child: Text('Puntualidad completa',
+              style: TextStyle(fontSize: 10, color: context.colors.mutedFg))),
 
           // Flecha "ver detalle"
-          const Icon(LucideIcons.chevronRight, size: 13, color: ShadNeutral.fgTertiary),
+            Icon(LucideIcons.chevronRight, size: 13, color: context.colors.fgTertiary),
         ]),
       ]),
     );
@@ -123,24 +126,23 @@ class _DayCell extends StatelessWidget {
 
     final (color, icon) = switch (day.status) {
       DayStatus.complete when day.isPunctualEntry && day.isPunctualExit =>
-        (ShadNeutral.success, LucideIcons.circleCheck),
+        (context.colors.success, LucideIcons.circleCheck),
       DayStatus.complete =>
-        (ShadNeutral.warning, LucideIcons.circleAlert),
+        (context.colors.warning, LucideIcons.circleAlert),
       DayStatus.missingEntry || DayStatus.missingExit =>
-        (ShadNeutral.warning, LucideIcons.circleMinus),
+        (context.colors.warning, LucideIcons.circleMinus),
       DayStatus.absent =>
-        (ShadNeutral.destructive, LucideIcons.circleX),
+        (context.colors.destructive, LucideIcons.circleX),
       DayStatus.future =>
-        (ShadNeutral.fgTertiary, LucideIcons.circle),
-      _ => (ShadNeutral.fgTertiary, LucideIcons.circle),
+        (context.colors.fgTertiary, LucideIcons.circle),
+      _ => (context.colors.fgTertiary, LucideIcons.circle),
     };
-
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Container(
         width: 30, height: 30,
         decoration: BoxDecoration(
           color: color.withAlpha(20),
-          borderRadius: BorderRadius.circular(ShadNeutral.radiusSm),
+          borderRadius: BorderRadius.circular(radiusSm),
           border: Border.all(color: color.withAlpha(180)),
         ),
         child: Icon(icon, size: 14, color: color),
@@ -149,10 +151,10 @@ class _DayCell extends StatelessWidget {
       Text(lbl, style: TextStyle(
           fontSize: 10, fontWeight: FontWeight.w500,
           color: day.status == DayStatus.future
-              ? ShadNeutral.fgTertiary : ShadNeutral.mutedFg)),
+              ? context.colors.fgTertiary : context.colors.mutedFg)),
       if (day.overtimeMinutes > 0)
         Text('+${day.overtimeMinutes}m',
-          style: const TextStyle(fontSize: 9, color: ShadNeutral.overtime)),
+          style:   TextStyle(fontSize: 9, color: context.colors.overtime)),
     ]);
   }
 }
