@@ -22,7 +22,7 @@ class AttendanceLoaded extends AttendanceState {
   final WorkScheduleConfig config;
   final bool isCurrentWeek;
   final bool isLocalData;
-
+  final bool hideAbsences;
   const AttendanceLoaded({
     required this.weekData,
     required this.weekStart,
@@ -30,10 +30,11 @@ class AttendanceLoaded extends AttendanceState {
     required this.config,
     required this.isCurrentWeek,
     this.isLocalData = false,
+    this.hideAbsences = true,
   });
 
   @override
-  List<Object?> get props => [weekData, weekStart, weekEnd, isCurrentWeek, isLocalData];
+  List<Object?> get props => [weekData, weekStart, weekEnd, isCurrentWeek, isLocalData,hideAbsences];
 }
 
 class AttendanceSyncing extends AttendanceState {

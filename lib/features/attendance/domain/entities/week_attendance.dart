@@ -64,7 +64,7 @@ class WeekAttendance extends Equatable {
   /// Días con asistencia completa.
   int get completeDays =>
       days.where((d) => d.isComplete).length;
-
+  bool get wasAbsent => expectedWorkDays > 0 && completeDays == 0;
   /// Horas extra formateadas como "Xh Ym".
   String get overtimeFormatted {
     final h = totalOvertimeMinutes ~/ 60;

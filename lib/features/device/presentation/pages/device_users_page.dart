@@ -16,15 +16,20 @@ class DeviceUsersBody extends StatelessWidget {
           return const Center(child: ProgressRing());
         }
         if (state is DeviceError) {
-          return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(LucideIcons.wifiOff, size: 40, color: ShadNeutral.mutedFg),
+          return Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(LucideIcons.wifiOff,
+                size: 40, color: ShadNeutral.mutedFg),
             const SizedBox(height: 14),
             Text(state.message,
-                style: const TextStyle(color: ShadNeutral.mutedFg, fontSize: 13)),
+                style:
+                    const TextStyle(color: ShadNeutral.mutedFg, fontSize: 13)),
             const SizedBox(height: 18),
             ShadSecondaryButton(
-              label: 'Reintentar', icon: LucideIcons.refreshCw,
-              onPressed: () => ctx.read<DeviceBloc>().add(const DeviceUsersLoadRequested()),
+              label: 'Reintentar',
+              icon: LucideIcons.refreshCw,
+              onPressed: () =>
+                  ctx.read<DeviceBloc>().add(const DeviceUsersLoadRequested()),
             ),
           ]));
         }
@@ -37,6 +42,7 @@ class DeviceUsersBody extends StatelessWidget {
 
 class _UsersGrid extends StatefulWidget {
   final List users;
+
   const _UsersGrid({required this.users});
 
   @override
@@ -68,9 +74,11 @@ class _UsersGridState extends State<_UsersGrid> {
                 placeholder: 'Buscar…',
                 prefix: const Padding(
                     padding: EdgeInsets.only(left: 8),
-                    child: Icon(LucideIcons.search, size: 13, color: ShadNeutral.mutedFg)),
+                    child: Icon(LucideIcons.search,
+                        size: 13, color: ShadNeutral.mutedFg)),
                 onChanged: (v) => setState(() => _q = v),
-                style: const TextStyle(fontSize: 12, color: ShadNeutral.foreground),
+                style: const TextStyle(
+                    fontSize: 12, color: ShadNeutral.foreground),
                 decoration: WidgetStatePropertyAll(BoxDecoration(
                   color: ShadNeutral.card,
                   borderRadius: BorderRadius.circular(ShadNeutral.radius),
@@ -80,15 +88,19 @@ class _UsersGridState extends State<_UsersGrid> {
             ),
             const SizedBox(width: 8),
             ShadIconButton(
-              icon: LucideIcons.refreshCw, tooltip: 'Actualizar',
-              onPressed: () => context.read<DeviceBloc>().add(const DeviceUsersLoadRequested()),
+              icon: LucideIcons.refreshCw,
+              tooltip: 'Actualizar',
+              onPressed: () => context
+                  .read<DeviceBloc>()
+                  .add(const DeviceUsersLoadRequested()),
             ),
           ]),
         ),
         const SizedBox(height: 20),
-
         if (filtered.isEmpty)
-          Expanded(child: Center(child: Text(
+          Expanded(
+              child: Center(
+                  child: Text(
             _q.isEmpty ? 'Sin empleados' : 'Sin resultados para "$_q"',
             style: const TextStyle(color: ShadNeutral.mutedFg, fontSize: 13),
           )))
@@ -97,8 +109,10 @@ class _UsersGridState extends State<_UsersGrid> {
             final cols = (c.maxWidth / 210).floor().clamp(2, 6);
             return GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: cols, mainAxisSpacing: 8,
-                crossAxisSpacing: 8, childAspectRatio: 2.8,
+                crossAxisCount: cols,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 2.8,
               ),
               itemCount: filtered.length,
               itemBuilder: (_, i) => _UserCard(user: filtered[i]),
@@ -111,12 +125,17 @@ class _UsersGridState extends State<_UsersGrid> {
 
 class _UserCard extends StatelessWidget {
   final dynamic user;
+
   const _UserCard({required this.user});
 
   @override
   Widget build(BuildContext context) {
-    final initials = user.name.trim().split(' ')
-        .take(2).map((w) => (w as String)[0].toUpperCase()).join();
+    final initials = user.name
+        .trim()
+        .split(' ')
+        .take(2)
+        .map((w) => (w as String)[0].toUpperCase())
+        .join();
 
     return ShadCard(
       hoverable: true,
@@ -124,28 +143,38 @@ class _UserCard extends StatelessWidget {
       child: Row(children: [
         // Avatar
         Container(
-          width: 34, height: 34,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
             color: ShadNeutral.muted,
             borderRadius: BorderRadius.circular(ShadNeutral.radiusSm),
             border: Border.all(color: ShadNeutral.border),
           ),
-          child: Center(child: Text(initials,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                color: ShadNeutral.foreground))),
+          child: Center(
+              child: Text(initials,
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: ShadNeutral.foreground))),
         ),
         const SizedBox(width: 10),
-        Expanded(child: Column(
+        Expanded(
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(user.name,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
-                  color: ShadNeutral.foreground),
-              overflow: TextOverflow.ellipsis),
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: ShadNeutral.foreground),
+                overflow: TextOverflow.ellipsis),
             Text(
-              user.registration.isNotEmpty ? '#${user.registration}' : 'ID ${user.id}',
-              style: const TextStyle(fontSize: 11, color: ShadNeutral.mutedFg)),
+                user.registration.isNotEmpty
+                    ? '#${user.registration}'
+                    : 'ID ${user.id}',
+                style:
+                    const TextStyle(fontSize: 11, color: ShadNeutral.mutedFg)),
           ],
         )),
       ]),

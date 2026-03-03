@@ -1,3 +1,4 @@
+
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/failures.dart';
@@ -11,12 +12,12 @@ import '../repositories/device_repository.dart';
 /// ```dart
 /// final result = await authenticateDevice(credentials);
 /// ```
-class AuthenticateDeviceOnStart {
+class RestoreDeviceSession {
   final DeviceRepository _repository;
 
-  const AuthenticateDeviceOnStart(this._repository);
+  const RestoreDeviceSession(this._repository);
 
-  Future<Either<Failure, bool>> call() {
-    return _repository.authenticateOnStart();
+  Future<Either<Failure, Unit>> call(DeviceCredentials credentials) {
+    return _repository.restoreDeviceSession(credentials);
   }
 }

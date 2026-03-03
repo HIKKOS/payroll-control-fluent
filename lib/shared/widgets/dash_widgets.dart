@@ -450,10 +450,11 @@ class ShadPrimaryButton extends StatelessWidget {
         onPressed: loading ? null : onPressed,
         child: loading
             ? const SizedBox(
-                width: 14,
-                height: 14,
+                width: 25,
+                height: 25,
                 child: ProgressRing(
-                    strokeWidth: 2, activeColor: ShadNeutral.primaryFg),
+                  backgroundColor: Colors.transparent,
+                    strokeWidth: 4, activeColor: ShadNeutral.primaryFg),
               )
             : Row(
                 mainAxisSize: MainAxisSize.min,

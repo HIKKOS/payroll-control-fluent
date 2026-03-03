@@ -12,6 +12,7 @@ import '../widgets/week_selector_widget.dart';
 
 class AttendancePage extends StatelessWidget {
   final List<DeviceUser> users;
+
   const AttendancePage({super.key, required this.users});
 
   @override
@@ -32,20 +33,23 @@ class _AttendanceBody extends StatelessWidget {
     return BlocConsumer<AttendanceBloc, AttendanceState>(
       listener: (ctx, state) {
         if (state is AttendanceSyncSuccess) {
-          displayInfoBar(ctx, builder: (c, close) => InfoBar(
-            title: const Text('Sync completado'),
-            content: Text('${state.totalRecords} registros guardados localmente.'),
-            severity: InfoBarSeverity.success,
-            onClose: close,
-          ));
+          displayInfoBar(ctx,
+              builder: (c, close) => InfoBar(
+                    title: const Text('Sync completado'),
+                    content: Text(
+                        '${state.totalRecords} registros guardados localmente.'),
+                    severity: InfoBarSeverity.success,
+                    onClose: close,
+                  ));
         }
         if (state is AttendanceError) {
-          displayInfoBar(ctx, builder: (c, close) => InfoBar(
-            title: const Text('Error'),
-            content: Text(state.message),
-            severity: InfoBarSeverity.error,
-            onClose: close,
-          ));
+          displayInfoBar(ctx,
+              builder: (c, close) => InfoBar(
+                    title: const Text('Error'),
+                    content: Text(state.message),
+                    severity: InfoBarSeverity.error,
+                    onClose: close,
+                  ));
         }
       },
       builder: (ctx, state) {
@@ -53,22 +57,31 @@ class _AttendanceBody extends StatelessWidget {
           return const Center(child: ProgressRing());
         }
         if (state is AttendanceSyncing) {
-          return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          return Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
             const ProgressRing(),
             const SizedBox(height: 16),
-            Text(state.message, style: const TextStyle(color: ShadNeutral.mutedFg, fontSize: 13)),
+            Text(state.message,
+                style:
+                    const TextStyle(color: ShadNeutral.mutedFg, fontSize: 13)),
           ]));
         }
         if (state is AttendanceLoaded) return _LoadedLayout(state: state);
         if (state is AttendanceError) {
-          return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(LucideIcons.serverOff, size: 40, color: ShadNeutral.mutedFg),
+          return Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(LucideIcons.serverOff,
+                size: 40, color: ShadNeutral.mutedFg),
             const SizedBox(height: 14),
-            Text(state.message, style: const TextStyle(color: ShadNeutral.mutedFg)),
+            Text(state.message,
+                style: const TextStyle(color: ShadNeutral.mutedFg)),
             const SizedBox(height: 18),
             ShadSecondaryButton(
-              label: 'Reintentar', icon: LucideIcons.refreshCw,
-              onPressed: () => ctx.read<AttendanceBloc>().add(const AttendanceLoadCurrentWeek()),
+              label: 'Reintentar',
+              icon: LucideIcons.refreshCw,
+              onPressed: () => ctx
+                  .read<AttendanceBloc>()
+                  .add(const AttendanceLoadCurrentWeek()),
             ),
           ]));
         }
@@ -80,14 +93,12 @@ class _AttendanceBody extends StatelessWidget {
 
 class _LoadedLayout extends StatelessWidget {
   final AttendanceLoaded state;
+
   const _LoadedLayout({required this.state});
 
   @override
   Widget build(BuildContext context) {
-    final withBonus = state.weekData.where((w) => w.qualifiesForBonus).length;
-    final total     = state.weekData.length;
-    final withExtra = state.weekData.where((w) => w.totalOvertimeMinutes > 0).length;
-    final absent    = state.weekData.where((w) => w.completeDays == 0).length;
+    String query = "";
 
     return Padding(
       padding: const EdgeInsets.all(28),
@@ -95,7 +106,8 @@ class _LoadedLayout extends StatelessWidget {
         // ── Header ──────────────────────────────────────────────────────────
         ShadSectionHeader(
           title: 'Semana laboral',
-          description: state.isCurrentWeek ? 'Semana en curso' : 'Semana histórica',
+          description:
+              state.isCurrentWeek ? 'Semana en curso' : 'Semana histórica',
           trailing: Row(children: [
             if (state.isLocalData)
               const Padding(
@@ -106,66 +118,133 @@ class _LoadedLayout extends StatelessWidget {
                   icon: LucideIcons.hardDrive,
                 ),
               ),
-
             WeekSelectorWidget(
               selectedStart: state.weekStart,
               selectedEnd: state.weekEnd,
               config: state.config,
               onWeekSelected: (s, e) => context.read<AttendanceBloc>().add(
-                AttendanceWeekSelected(weekStart: s, weekEnd: e),
-              ),
+                    AttendanceWeekSelected(weekStart: s, weekEnd: e),
+                  ),
             ),
             const SizedBox(width: 8),
             ShadSecondaryButton(
-              label: 'Sync local', icon: LucideIcons.cloudDownload,
-              onPressed: () => context.read<AttendanceBloc>().add(const AttendanceSyncLocalRequested()),
+              label: 'Sync local',
+              icon: LucideIcons.cloudDownload,
+              onPressed: () => context
+                  .read<AttendanceBloc>()
+                  .add(const AttendanceSyncLocalRequested()),
             ),
             const SizedBox(width: 6),
             ShadIconButton(
-              icon: LucideIcons.refreshCw, tooltip: 'Actualizar',
+              icon: LucideIcons.refreshCw,
+              tooltip: 'Actualizar',
               onPressed: () => context.read<AttendanceBloc>().add(
-                AttendanceWeekSelected(weekStart: state.weekStart, weekEnd: state.weekEnd)),
+                  AttendanceWeekSelected(
+                      weekStart: state.weekStart, weekEnd: state.weekEnd)),
             ),
           ]),
         ),
 
         const SizedBox(height: 20),
+        Expanded(
+          child: StatefulBuilder(builder: (context, setState) {
+            final filtered = state.weekData.where((weekAtt) {
+              final u = weekAtt.userName;
+              return u.isEmpty || u.toLowerCase().contains(query);
+            }).toList();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize:  MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text("Mostrando solo usuarios activos",
+                            style: TextStyle(
+                              fontSize: 16,
+                            )),
+                        const SizedBox(width: 12),
+                        Tooltip(message: state.hideAbsences
+                            ? 'Se están ocultando los usuarios que no tuvieron registros en la semana seleccionada.'
+                            : 'Mostrando todos los usuarios, incluyendo los que no tuvieron registros en la semana seleccionada.',child: const Icon(LucideIcons.info, size: 14, color: ShadNeutral.mutedFg)),
+                      ],
+                    ),
+                    SizedBox(
+                      width: MediaQuery.sizeOf(context).width * 0.3,
+                      child: TextBox(
+                        placeholder: 'Buscar…',
+                        prefix: const Padding(
+                            padding: EdgeInsets.only(left: 8),
+                            child: Icon(LucideIcons.search,
+                                size: 13, color: ShadNeutral.mutedFg)),
+                        onChanged: (v) => setState(() => query = v),
+                        style: const TextStyle(
+                            fontSize: 12, color: ShadNeutral.foreground),
+                        decoration: WidgetStatePropertyAll(BoxDecoration(
+                          color: ShadNeutral.card,
+                          borderRadius:
+                              BorderRadius.circular(ShadNeutral.radius),
+                          border: Border.all(color: ShadNeutral.border),
+                        )),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
 
+                // ── Grid de empleados ────────────────────────────────────────────────
+                Expanded(child: LayoutBuilder(builder: (_, c) {
+                  final cols = (c.maxWidth / 320).floor().clamp(1, 4);
+                  if (filtered.isEmpty) {
+                    return SizedBox(
+                      width: c.maxWidth,
+                      child: Column(
+                          spacing: 10,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                                query.isEmpty
+                                    ? LucideIcons.timerOff
+                                    : LucideIcons.search,
+                                size: 80,
+                                color: ShadNeutral.mutedFg),
+                            Text(
+                              query.isEmpty
+                                  ? 'No hay registros'
+                                  : 'Sin resultados para "$query"',
+                              style: const TextStyle(
+                                  color: ShadNeutral.mutedFg, fontSize: 24),
+                            ),
+                          ]),
+                    );
+                  }
+
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      mainAxisExtent: 210,
+                    ),
+                    itemCount: filtered.length,
+                    itemBuilder: (_, i) {
+                      final w = filtered[i];
+                      return EmployeeWeekCard(
+                        week: w,
+                        onTap: () => EmployeeWeekDetailSheet.show(
+                            context, w, state.config),
+                      );
+                    },
+                  );
+                })),
+              ],
+            );
+          }),
+        ),
         // ── KPIs ────────────────────────────────────────────────────────────
-        Row(children: [
-          ShadStatCard(label: 'Con bono',      value: '$withBonus / $total',
-              icon: LucideIcons.award,      accentColor: ShadNeutral.success),
-          const SizedBox(width: 10),
-          ShadStatCard(label: 'Sin bono',      value: '${total - withBonus}',
-              icon: LucideIcons.circleX,    accentColor: ShadNeutral.destructive),
-          const SizedBox(width: 10),
-          ShadStatCard(label: 'Horas extra',   value: '$withExtra emp.',
-              icon: LucideIcons.clock,      accentColor: ShadNeutral.overtime),
-          const SizedBox(width: 10),
-          ShadStatCard(label: 'Ausencias',     value: '$absent emp.',
-              icon: LucideIcons.calendarX2, accentColor: ShadNeutral.warning),
-        ]),
-
-        const SizedBox(height: 20),
-
-        // ── Grid de empleados ────────────────────────────────────────────────
-        Expanded(child: LayoutBuilder(builder: (_, c) {
-          final cols = (c.maxWidth / 320).floor().clamp(1, 4);
-          return GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: cols, mainAxisSpacing: 10,
-              crossAxisSpacing: 10, mainAxisExtent: 210,
-            ),
-            itemCount: state.weekData.length,
-            itemBuilder: (_, i) {
-              final w = state.weekData[i];
-              return EmployeeWeekCard(
-                week: w,
-                onTap: () => EmployeeWeekDetailSheet.show(context, w, state.config),
-              );
-            },
-          );
-        })),
       ]),
     );
   }

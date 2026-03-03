@@ -4,39 +4,54 @@ import 'session_cookie_interceptor.dart';
 
 /// Cliente HTTP centralizado para comunicarse con el ControlID.
 ///
-/// Se instancia con la IP/host del dispositivo en tiempo de ejecución
-/// (cuando el usuario ingresa los datos de conexión), no al arrancar la app.
-/// Esto permite que la app funcione sin red hasta que el usuario configure
-/// la conexión.
+/// Ciclo de vida:
+/// - Al arrancar la app se crea un cliente vacío (sin baseUrl).
+/// - [reconfigure] lo inicializa con el host/puerto del dispositivo.
+///   Se llama tanto desde el login manual como desde la restauración de sesión.
+/// - El singleton en GetIt garantiza que Session y Device comparten
+///   la misma cookie de autenticación.
 class DioClient {
-  late final Dio dio;
-  late final SessionCookieInterceptor sessionInterceptor;
+  late Dio _dio;
+  late SessionCookieInterceptor _sessionInterceptor;
+  bool _configured = false;
 
-  DioClient({required String baseUrl}) {
-    sessionInterceptor = SessionCookieInterceptor();
-
-    dio = Dio(
-      BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: AppConfig.connectTimeout,
-        receiveTimeout: AppConfig.receiveTimeout,
-        // El ControlID espera JSON en el body
-        contentType: Headers.jsonContentType,
-        // Acepta cualquier status para manejarlo nosotros mismos
-        validateStatus: (_) => true,
-      ),
-    )..interceptors.addAll([
-      sessionInterceptor,
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        requestHeader: false,
-        responseHeader: false,
-      ),
-    ]);
+  DioClient() {
+    _sessionInterceptor = SessionCookieInterceptor();
+    _dio = Dio(); // instancia vacía hasta reconfigure()
   }
 
-  bool get hasActiveSession => sessionInterceptor.hasSession;
+  Dio get dio => _dio;
 
-  void clearSession() => sessionInterceptor.clearSession();
+  bool get hasActiveSession => _configured && _sessionInterceptor.hasSession;
+
+  void clearSession() => _sessionInterceptor.clearSession();
+
+  /// Inicializa (o re-inicializa) el cliente con nuevo host/puerto.
+  /// [keepSession] conserva la cookie existente (para el check de sesión).
+  void reconfigure({
+    required String host,
+      int? port,
+    bool keepSession = true,
+  }) {
+    if (!keepSession) _sessionInterceptor = SessionCookieInterceptor();
+
+    _dio = Dio(BaseOptions(
+      baseUrl:     'http://$host${port != null ? ':$port' : ''}',
+      connectTimeout: AppConfig.connectTimeout,
+      receiveTimeout: AppConfig.receiveTimeout,
+      contentType: Headers.jsonContentType,
+      validateStatus: (_) => true,
+    ))
+      ..interceptors.addAll([
+        _sessionInterceptor,
+        LogInterceptor(
+          requestBody: true,
+          responseBody: true,
+          requestHeader: false,
+          responseHeader: false,
+        ),
+      ]);
+
+    _configured = true;
+  }
 }

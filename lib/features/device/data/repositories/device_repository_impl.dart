@@ -1,57 +1,47 @@
+import 'package:drift/drift.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:nomina_control/features/device/data/datasources/control_id_datasource_impl.dart';
-import 'package:nomina_control/features/device/data/datasources/device_local_datasource.dart';
-import 'package:nomina_control/features/device/data/datasources/device_remote_datasource.dart';
-import 'package:nomina_control/features/device/domain/entities/device_credentials.dart';
-import 'package:nomina_control/features/device/domain/entities/device_user.dart';
-import 'package:nomina_control/features/device/domain/repositories/device_repository.dart';
-
+import 'package:nomina_control/core/database/app_database.dart';
+import '../../../../core/database/access_logs_dao.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../domain/entities/device_credentials.dart';
+import '../../domain/entities/device_user.dart';
+import '../../domain/repositories/device_repository.dart';
+import '../datasources/control_id_datasource_impl.dart';
+import '../datasources/device_remote_datasource.dart';
 
-/// Implementación concreta del repositorio de dispositivo.
-///
-/// Su responsabilidad es:
-/// 1. Crear/reemplazar el [DioClient] cuando cambian las credenciales.
-/// 2. Delegar las operaciones al datasource.
-/// 3. Capturar excepciones de la capa de datos y convertirlas en [Failure].
-///
-/// La UI y los casos de uso nunca ven excepciones; solo ven [Either].
 class DeviceRepositoryImpl implements DeviceRepository {
+  final DioClient _dioClient;
+  final AccessLogsDao _dao;
   DeviceRemoteDatasource? _datasource;
-  final DeviceLocalDatasource _localDatasource;
-  DioClient? _dioClient;
-
-  DioClient? get dioClient => _dioClient;
 
   DeviceRepositoryImpl({
-    required DeviceLocalDatasource localDatasource,
-  }) : _localDatasource = localDatasource;
+    required DioClient dioClient,
+    required AccessLogsDao dao,
+  })  : _dioClient = dioClient,
+        _dao = dao;
 
   // ── Authenticate ──────────────────────────────────────────────────────────
 
   @override
   Future<Either<Failure, bool>> authenticate(
-    DeviceCredentials credentials, {
-    bool saveCredentials = true,
-  }) async {
-    // Cada vez que el usuario intenta conectarse a un dispositivo,
-    // recreamos el cliente con la nueva baseUrl.
-    _dioClient = DioClient(baseUrl: credentials.baseUrl);
-    _datasource = ControlIdDatasourceImpl(_dioClient!);
+      DeviceCredentials credentials) async {
+    // Reconfigurar el cliente compartido con el nuevo host
+    _dioClient.reconfigure(
+      host: credentials.host,
+      port: credentials.port,
+      keepSession: false, // login fresco, limpiar cookie anterior
+    );
+    _datasource = ControlIdDatasourceImpl(_dioClient);
 
     try {
       await _datasource!.login(
         login: credentials.login,
         password: credentials.password,
       );
-      if (saveCredentials) {
-        await _localDatasource.saveCredentials(credentials);
-      }
       return right(true);
     } on AuthException catch (e) {
-      await _localDatasource.deleteCredentials();
       return left(AuthFailure(e.message));
     } on NetworkException catch (e) {
       return left(NetworkFailure(e.message));
@@ -62,18 +52,28 @@ class DeviceRepositoryImpl implements DeviceRepository {
     }
   }
 
-  // ── Get Users ─────────────────────────────────────────────────────────────
+  // ── Get Users (online) ────────────────────────────────────────────────────
 
   @override
   Future<Either<Failure, List<DeviceUser>>> getUsers() async {
     if (_datasource == null) {
-      return left(const SessionExpiredFailure(
-        'No hay conexión activa. Inicia sesión primero.',
-      ));
+      return left(const SessionExpiredFailure('No hay conexión activa.'));
     }
-
     try {
       final models = await _datasource!.getUsers();
+
+      // Guardar snapshot para modo offline
+      await _dao.upsertCachedUsers(
+        models
+            .map((u) => CachedUsersCompanion.insert(
+                  id: Value(u.id),
+                  name: u.name,
+                  registration: u.registration,
+                  savedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                ))
+            .toList(),
+      );
+
       return right(models);
     } on SessionExpiredException {
       return left(const SessionExpiredFailure());
@@ -88,36 +88,49 @@ class DeviceRepositoryImpl implements DeviceRepository {
     }
   }
 
+  // ── Get Users (offline) ───────────────────────────────────────────────────
+
+  @override
+  Future<Either<Failure, List<DeviceUser>>> getCachedUsers() async {
+    try {
+      final rows = await _dao.getAllCachedUsers();
+      return right(rows
+          .map((r) => DeviceUser(
+                id: r.id,
+                name: r.name,
+                registration: r.registration,
+              ))
+          .toList());
+    } catch (e) {
+      return left(UnexpectedFailure(e.toString()));
+    }
+  }
+
   // ── Logout ────────────────────────────────────────────────────────────────
 
   @override
   Future<Either<Failure, bool>> logout() async {
     try {
-      final futures = <Future<void>>[   _localDatasource.deleteCredentials()];
-      if (_datasource != null) {
-        futures.add(_datasource!.logout());
-      }
-      await Future.wait(futures);
-
-      _datasource = null;
-      _dioClient = null;
-      return right(true);
-    } catch (e) {
-      // El logout siempre limpia el estado local aunque falle en el servidor
-      _datasource = null;
-      _dioClient = null;
-      return right(true);
-    }
+      await _datasource?.logout();
+    } catch (_) {}
+    _datasource = null;
+    _dioClient.clearSession();
+    return right(true);
   }
 
-  @override
-  Future<Either<Failure, bool>> authenticateOnStart() async {
-    final credentials = await _localDatasource.loadCredentials();
-    if (credentials == null) {
+  /// Expone el cliente para que AttendanceDatasource comparta la sesión.
+  DioClient get dioClient => _dioClient;
 
-      return left(
-          const SessionExpiredFailure('No hay credenciales guardadas.'));
-    }
-    return authenticate(credentials, saveCredentials: false);
+  @override
+  Future<Either<Failure, Unit>> restoreDeviceSession(
+      DeviceCredentials credentials) async {
+    // Reconfigurar el cliente compartido con el nuevo host
+    _dioClient.reconfigure(
+      host: credentials.host,
+      port: credentials.port,
+      keepSession: true
+    );
+    _datasource = ControlIdDatasourceImpl(_dioClient);
+  return right(unit);
   }
 }
