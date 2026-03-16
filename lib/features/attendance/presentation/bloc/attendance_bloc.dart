@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../device/domain/entities/device_user.dart';
@@ -59,7 +61,8 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     _currentWeekStart = WeekRangeHelper.currentWeekStart(config);
     _currentWeekEnd = WeekRangeHelper.currentWeekEnd(config);
 
-    await _loadWeek(emit,  useLocalLogs: false, isCurrentWeek: true);
+    await _loadWeek(emit,
+        useLocalLogs: event.useLocalLogs, isCurrentWeek: true);
   }
 
   Future<void> _onWeekSelected(
@@ -74,7 +77,8 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     final isCurrentWeek =
         !event.weekStart.isAfter(now) && !event.weekEnd.isBefore(now);
 
-    await _loadWeek(emit,  useLocalLogs: true, isCurrentWeek: isCurrentWeek);
+    await _loadWeek(emit,
+        useLocalLogs: event.useLocalLogs, isCurrentWeek: isCurrentWeek);
   }
 
   Future<void> _onSyncLocal(
@@ -110,7 +114,6 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     Emitter<AttendanceState> emit, {
     required bool useLocalLogs,
     required bool isCurrentWeek,
-
   }) async {
     final config = _config ?? const WorkScheduleConfig();
 
@@ -128,13 +131,9 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
         requiresReconnect: failure is SessionExpiredFailure,
       )),
       (data) => emit(AttendanceLoaded(
-        hideAbsences:  _hideAbsences,
-        weekData: data.where((w){
-          if(!_hideAbsences){
-            return true;
-          }
-
-          return !w.wasAbsent;
+        hideAbsences: _hideAbsences,
+        weekData: data.where((w) {
+          return !_hideAbsences ? true : !w.wasAbsent;
         }).toList(),
         weekStart: _currentWeekStart!,
         weekEnd: _currentWeekEnd!,

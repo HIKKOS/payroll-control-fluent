@@ -13,22 +13,26 @@ import '../widgets/week_selector_widget.dart';
 
 class AttendancePage extends StatelessWidget {
   final List<DeviceUser> users;
+  final bool isOffline;
 
-  const AttendancePage({super.key, required this.users});
+  const AttendancePage(
+      {super.key, required this.users, required this.isOffline});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => serviceLocator<AttendanceBloc>(param1: users)
-        ..add(const AttendanceLoadCurrentWeek()),
-      child: const _AttendanceBody(),
+        ..add(  AttendanceLoadCurrentWeek(useLocalLogs: isOffline)),
+      child:   _AttendanceBody( useLocalLogs: isOffline,),
     );
   }
 }
 
 class _AttendanceBody extends StatelessWidget {
-  const _AttendanceBody();
-
+  const _AttendanceBody( {
+    required this.useLocalLogs,
+});
+  final bool useLocalLogs;
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AttendanceBloc, AttendanceState>(
@@ -63,19 +67,16 @@ class _AttendanceBody extends StatelessWidget {
             const ProgressRing(),
             const SizedBox(height: 16),
             Text(state.message,
-                style:
-                      TextStyle(color: ctx.colors.mutedFg, fontSize: 13)),
+                style: TextStyle(color: ctx.colors.mutedFg, fontSize: 13)),
           ]));
         }
-        if (state is AttendanceLoaded) return _LoadedLayout(state: state);
+        if (state is AttendanceLoaded) return _LoadedLayout(state: state, useLocalLogs: useLocalLogs,);
         if (state is AttendanceError) {
           return Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(LucideIcons.serverOff,
-                size: 40, color: ctx.colors.mutedFg),
+            Icon(LucideIcons.serverOff, size: 40, color: ctx.colors.mutedFg),
             const SizedBox(height: 14),
-            Text(state.message,
-                style:   TextStyle(color: ctx.colors.mutedFg)),
+            Text(state.message, style: TextStyle(color: ctx.colors.mutedFg)),
             const SizedBox(height: 18),
             ShadSecondaryButton(
               label: 'Reintentar',
@@ -94,8 +95,8 @@ class _AttendanceBody extends StatelessWidget {
 
 class _LoadedLayout extends StatelessWidget {
   final AttendanceLoaded state;
-
-  const _LoadedLayout({required this.state});
+  final bool useLocalLogs;
+  const _LoadedLayout({required this.state, required this.useLocalLogs });
 
   @override
   Widget build(BuildContext context) {
@@ -124,25 +125,27 @@ class _LoadedLayout extends StatelessWidget {
               selectedEnd: state.weekEnd,
               config: state.config,
               onWeekSelected: (s, e) => context.read<AttendanceBloc>().add(
-                    AttendanceWeekSelected(weekStart: s, weekEnd: e),
+                    AttendanceWeekSelected(weekStart: s, weekEnd: e,useLocalLogs: useLocalLogs),
                   ),
             ),
             const SizedBox(width: 8),
-            ShadSecondaryButton(
-              label: 'Sync local',
-              icon: LucideIcons.cloudDownload,
-              onPressed: () => context
-                  .read<AttendanceBloc>()
-                  .add(const AttendanceSyncLocalRequested()),
-            ),
+            if (!state.isLocalData)
+              ShadSecondaryButton(
+                label: 'Sync local',
+                icon: LucideIcons.cloudDownload,
+                onPressed: () => context
+                    .read<AttendanceBloc>()
+                    .add(const AttendanceSyncLocalRequested()),
+              ),
             const SizedBox(width: 6),
-            ShadIconButton(
-              icon: LucideIcons.refreshCw,
-              tooltip: 'Actualizar',
-              onPressed: () => context.read<AttendanceBloc>().add(
-                  AttendanceWeekSelected(
-                      weekStart: state.weekStart, weekEnd: state.weekEnd)),
-            ),
+            if (!state.isLocalData)
+              ShadIconButton(
+                icon: LucideIcons.refreshCw,
+                tooltip: 'Actualizar',
+                onPressed: () => context.read<AttendanceBloc>().add(
+                    AttendanceWeekSelected(
+                        weekStart: state.weekStart, weekEnd: state.weekEnd)),
+              ),
           ]),
         ),
 
@@ -160,7 +163,7 @@ class _LoadedLayout extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
-                      mainAxisSize:  MainAxisSize.min,
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Text("Mostrando solo usuarios activos",
@@ -168,26 +171,28 @@ class _LoadedLayout extends StatelessWidget {
                               fontSize: 16,
                             )),
                         const SizedBox(width: 12),
-                        Tooltip(message: state.hideAbsences
-                            ? 'Se están ocultando los usuarios que no tuvieron registros en la semana seleccionada.'
-                            : 'Mostrando todos los usuarios, incluyendo los que no tuvieron registros en la semana seleccionada.',child:   Icon(LucideIcons.info, size: 14, color: context.colors.mutedFg)),
+                        Tooltip(
+                            message: state.hideAbsences
+                                ? 'Se están ocultando los usuarios que no tuvieron registros en la semana seleccionada.'
+                                : 'Mostrando todos los usuarios, incluyendo los que no tuvieron registros en la semana seleccionada.',
+                            child: Icon(LucideIcons.info,
+                                size: 14, color: context.colors.mutedFg)),
                       ],
                     ),
                     SizedBox(
                       width: MediaQuery.sizeOf(context).width * 0.3,
                       child: TextBox(
                         placeholder: 'Buscar…',
-                        prefix:   Padding(
+                        prefix: Padding(
                             padding: const EdgeInsets.only(left: 8),
                             child: Icon(LucideIcons.search,
                                 size: 13, color: context.colors.mutedFg)),
                         onChanged: (v) => setState(() => query = v),
-                        style:   TextStyle(
+                        style: TextStyle(
                             fontSize: 12, color: context.colors.foreground),
                         decoration: WidgetStatePropertyAll(BoxDecoration(
                           color: context.colors.card,
-                          borderRadius:
-                              BorderRadius.circular(radius),
+                          borderRadius: BorderRadius.circular(radius),
                           border: Border.all(color: context.colors.border),
                         )),
                       ),
@@ -216,7 +221,7 @@ class _LoadedLayout extends StatelessWidget {
                               query.isEmpty
                                   ? 'No hay registros'
                                   : 'Sin resultados para "$query"',
-                              style:   TextStyle(
+                              style: TextStyle(
                                   color: context.colors.mutedFg, fontSize: 24),
                             ),
                           ]),

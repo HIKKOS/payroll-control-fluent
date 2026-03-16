@@ -65,13 +65,13 @@ class _DeviceShellPageState extends State<DeviceShellPage> {
                 child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                   // ── Badge de estado de red ──────────────────────────────
                   _ConnectionBadge(offline: isOffline),
-                  const SizedBox(width: 8),
+                  if (!isOffline) const SizedBox(width: 8),
                   // Logout solo disponible online
                   if (!isOffline)
                     Tooltip(
                       message: 'Cerrar sesión',
                       child: IconButton(
-                        icon:   Icon(LucideIcons.logOut,
+                        icon: Icon(LucideIcons.logOut,
                             size: 15, color: context.colors.mutedFg),
                         onPressed: () => ctx
                             .read<DeviceBloc>()
@@ -97,11 +97,11 @@ class _DeviceShellPageState extends State<DeviceShellPage> {
                       borderRadius: BorderRadius.circular(radiusSm),
                       border: Border.all(color: context.colors.border),
                     ),
-                    child:   Icon(LucideIcons.fingerprintPattern,
+                    child: Icon(LucideIcons.fingerprintPattern,
                         size: 13, color: context.colors.foreground),
                   ),
                   const SizedBox(width: 9),
-                    Flexible(
+                  Flexible(
                       child: Text('NóminaControl',
                           style: TextStyle(
                               fontSize: 13,
@@ -121,20 +121,13 @@ class _DeviceShellPageState extends State<DeviceShellPage> {
                       ? const Center(child: ProgressRing())
                       : AttendancePage(
                           users: users,
+                          isOffline: isOffline,
                         ),
                 ),
                 PaneItem(
                   icon: const Icon(LucideIcons.users),
                   title: const Text('Empleados'),
                   body: const DeviceUsersBody(),
-                ),
-              ],
-              footerItems: [
-                PaneItemSeparator(),
-                PaneItem(
-                  icon: const Icon(LucideIcons.settings),
-                  title: const Text('Configuración'),
-                  body: const _SettingsPlaceholder(),
                 ),
               ],
             ),
@@ -154,22 +147,34 @@ class _ConnectionBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (offline) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        decoration: BoxDecoration(
-          color: context.colors.warningMuted,
-          borderRadius: BorderRadius.circular(radius),
-          border: Border.all(color: context.colors.warningBorder),
-        ),
-        child:   Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(LucideIcons.wifiOff, size: 11, color: context.colors.warning),
-          const SizedBox(width: 5),
-          Text('Sin conexión · datos locales',
-              style: TextStyle(
-                  fontSize: 11,
-                  color: context.colors.warning,
-                  fontWeight: FontWeight.w500)),
-        ]),
+      return Row(
+        spacing: 8,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(
+              color: context.colors.warningMuted,
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(color: context.colors.warningBorder),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(LucideIcons.wifiOff, size: 11, color: context.colors.warning),
+              const SizedBox(width: 5),
+              Text('Sin conexión · datos locales',
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: context.colors.warning,
+                      fontWeight: FontWeight.w500)),
+            ]),
+          ),
+          IconButton(icon: const Icon(LucideIcons.refreshCcw), onPressed: () {
+              // Forzar recarga online (si es posible)
+              // Esto es útil si el dispositivo se inició offline pero luego se conectó.
+              // O si hubo un error temporal en la conexión.
+              // El bloc decidirá si puede cargar online o no.
+              context.read<DeviceBloc>().add(const DeviceUsersLoadRequested());
+          },)
+        ],
       );
     }
     return Container(
@@ -183,10 +188,10 @@ class _ConnectionBadge extends StatelessWidget {
         Container(
             width: 5,
             height: 5,
-            decoration:   BoxDecoration(
+            decoration: BoxDecoration(
                 color: context.colors.success, shape: BoxShape.circle)),
         const SizedBox(width: 5),
-          Text('Conectado',
+        Text('Conectado',
             style: TextStyle(
                 fontSize: 11,
                 color: context.colors.success,
@@ -196,11 +201,3 @@ class _ConnectionBadge extends StatelessWidget {
   }
 }
 
-class _SettingsPlaceholder extends StatelessWidget {
-  const _SettingsPlaceholder();
-
-  @override
-  Widget build(BuildContext context) =>   Center(
-      child: Text('Configuración — próximamente',
-          style: TextStyle(color: context.colors.mutedFg, fontSize: 13)));
-}

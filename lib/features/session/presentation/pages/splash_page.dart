@@ -37,12 +37,12 @@ class _SplashBody extends StatelessWidget {
                 builder: (_) => const DeviceShellPage(offlineMode: false,),
             ));
             return;
-          case StartupDoneOffline(:final session):
+          case StartupDoneOffline _:
             Navigator.of(context).pushReplacement(FluentPageRoute(
               builder: (_) => const DeviceShellPage(offlineMode: true),
             ));
             return;
-          case StartupLoginRequired():
+          case StartupLoginRequired _:
             Navigator.of(context).pushReplacement(FluentPageRoute(
               builder: (_) => const DeviceConnectionPage(),
             ));

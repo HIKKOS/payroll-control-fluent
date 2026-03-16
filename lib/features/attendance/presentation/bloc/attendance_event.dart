@@ -9,21 +9,23 @@ abstract class AttendanceEvent extends Equatable {
 
 /// Carga la semana actual al entrar a la pantalla.
 class AttendanceLoadCurrentWeek extends AttendanceEvent {
-  const AttendanceLoadCurrentWeek();
+  final bool useLocalLogs;
+  const AttendanceLoadCurrentWeek({ this.useLocalLogs = false });
 }
 
 /// El usuario seleccionó una semana diferente en el picker.
 class AttendanceWeekSelected extends AttendanceEvent {
   final DateTime weekStart;
   final DateTime weekEnd;
-
+  final bool useLocalLogs;
   const AttendanceWeekSelected({
     required this.weekStart,
     required this.weekEnd,
+    this.useLocalLogs = false,
   });
 
   @override
-  List<Object?> get props => [weekStart, weekEnd];
+  List<Object?> get props => [weekStart, weekEnd, useLocalLogs];
 }
 
 /// El usuario presionó "Descargar accesos localmente".
