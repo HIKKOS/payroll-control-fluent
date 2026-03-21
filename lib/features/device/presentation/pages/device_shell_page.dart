@@ -86,23 +86,14 @@ class _DeviceShellPageState extends State<DeviceShellPage> {
               onChanged: (i) => setState(() => _idx = i),
               displayMode: PaneDisplayMode.compact,
               size: const NavigationPaneSize(openWidth: 210, compactWidth: 50),
-              header: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 16, 10, 20),
+              header: SizedBox(
+                height: 20,
                 child: Row(children: [
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: context.colors.card,
-                      borderRadius: BorderRadius.circular(radiusSm),
-                      border: Border.all(color: context.colors.border),
-                    ),
-                    child: Icon(LucideIcons.fingerprintPattern,
-                        size: 13, color: context.colors.foreground),
-                  ),
+                  Icon(LucideIcons.fingerprintPattern,
+                      size: 13, color: context.colors.foreground),
                   const SizedBox(width: 9),
                   Flexible(
-                      child: Text('NóminaControl',
+                      child: Text('Control de accesos',
                           style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -158,7 +149,8 @@ class _ConnectionBadge extends StatelessWidget {
               border: Border.all(color: context.colors.warningBorder),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(LucideIcons.wifiOff, size: 11, color: context.colors.warning),
+              Icon(LucideIcons.wifiOff,
+                  size: 11, color: context.colors.warning),
               const SizedBox(width: 5),
               Text('Sin conexión · datos locales',
                   style: TextStyle(
@@ -167,13 +159,16 @@ class _ConnectionBadge extends StatelessWidget {
                       fontWeight: FontWeight.w500)),
             ]),
           ),
-          IconButton(icon: const Icon(LucideIcons.refreshCcw), onPressed: () {
+          IconButton(
+            icon: const Icon(LucideIcons.refreshCcw),
+            onPressed: () {
               // Forzar recarga online (si es posible)
               // Esto es útil si el dispositivo se inició offline pero luego se conectó.
               // O si hubo un error temporal en la conexión.
               // El bloc decidirá si puede cargar online o no.
               context.read<DeviceBloc>().add(const DeviceUsersLoadRequested());
-          },)
+            },
+          )
         ],
       );
     }
@@ -200,4 +195,3 @@ class _ConnectionBadge extends StatelessWidget {
     );
   }
 }
-

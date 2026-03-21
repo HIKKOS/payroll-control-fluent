@@ -70,7 +70,7 @@ class _SplashBody extends StatelessWidget {
                     size: 26, color: context.colors.foreground),
               ),
               const SizedBox(height: 18),
-                Text('NóminaControl',
+                Text('Control de accesos',
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,

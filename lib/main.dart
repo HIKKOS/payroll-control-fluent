@@ -26,7 +26,7 @@ class NominaControlApp extends StatelessWidget {
         child: BlocBuilder<ThemeCubit, AppThemeMode>(
           builder: (context, mode) {
             return FluentApp(
-              title: 'NóminaControl',
+              title: 'Control de accesos',
               debugShowCheckedModeBanner: false,
               // FluentApp no tiene themeMode como MaterialApp,
               // así que simplemente pasamos el tema activo a `theme`.

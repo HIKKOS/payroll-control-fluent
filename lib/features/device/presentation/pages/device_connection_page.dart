@@ -115,7 +115,7 @@ class _ConnectionViewState extends State<_ConnectionView> {
                     ),
                     const SizedBox(width: 12),
                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('NóminaControl', style: TextStyle(fontSize: 18,
+                      Text('Control de accesos', style: TextStyle(fontSize: 18,
                           fontWeight: FontWeight.w600, color: context.colors.foreground,
                           letterSpacing: -0.3)),
                       Text('Control de Asistencia',
