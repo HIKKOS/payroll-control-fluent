@@ -28,9 +28,6 @@ class NominaControlApp extends StatelessWidget {
             return FluentApp(
               title: 'Control de accesos',
               debugShowCheckedModeBanner: false,
-              // FluentApp no tiene themeMode como MaterialApp,
-              // así que simplemente pasamos el tema activo a `theme`.
-              // La animación entre temas la gestiona el lerp de AppColors.
               theme: mode == AppThemeMode.light
                   ? buildDarkTheme()
                   : buildLightTheme(),

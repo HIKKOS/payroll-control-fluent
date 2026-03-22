@@ -1,26 +1,32 @@
-import 'dart:developer';
-
 import '../entities/access_log.dart';
 import '../entities/day_attendance.dart';
 import '../entities/week_attendance.dart';
 import '../../../settings/domain/entities/work_schedule_config.dart';
 
-/// **Motor de cálculo de asistencia.**
+/// Motor de cálculo de asistencia — clase pura sin estado, 100% testeable.
 ///
-/// Esta clase contiene TODA la lógica de negocio:
-/// - Deducir entrada/salida a partir de logs crudos
-/// - Calcular puntualidad con tiempo de gracia
-/// - Calcular horas extra (antes de entrada + después de salida)
-/// - Evaluar si el empleado califica para el bono
+/// Reglas de negocio implementadas:
 ///
-/// Es una clase pura sin estado — todos los métodos son funciones.
-/// Esto la hace 100% testeable sin mocks.
+/// Días L–V (laborables según config):
+///   · Primer acceso = entrada, último = salida.
+///   · Puntualidad: entrada ≤ horario + gracia / salida ≥ horario – gracia.
+///   · Overtime: minutos antes del horario oficial + minutos después.
+///   · Día incompleto (solo 1 acceso) → missingExit, no cuenta overtime.
+///   · Sin accesos → absent.
+///   · Cualquier día incompleto o ausente → pierde bono TODA la semana.
+///   · Tardanza o salida anticipada → pierde bono.
+///
+/// Sábado y domingo:
+///   · Si hay al menos 2 accesos: overtime = salida – entrada (tiempo total).
+///   · Si hay solo 1 acceso: se ignora (no hay suficiente info).
+///   · Si no hay accesos: no aparece en weekendDays.
+///   · NO afectan el bono de puntualidad.
+///   · NO tienen concepto de horario oficial, tardanza ni salida anticipada.
 class AttendanceCalculator {
   const AttendanceCalculator();
 
   // ── API pública ────────────────────────────────────────────────────────────
 
-  /// Calcula el resumen semanal de un empleado a partir de sus logs crudos.
   WeekAttendance calculateWeek({
     required int userId,
     required String userName,
@@ -29,7 +35,7 @@ class AttendanceCalculator {
     required List<AccessLog> logs,
     required WorkScheduleConfig config,
   }) {
-    // Filtramos logs que pertenecen a este usuario y a esta semana
+    // Logs del usuario en el rango completo (L–D)
     final userLogs = logs
         .where((l) =>
             l.userId == userId &&
@@ -37,45 +43,54 @@ class AttendanceCalculator {
             l.timestamp.isBefore(weekEnd.add(const Duration(days: 1))))
         .toList();
 
-    final days = <DayAttendance>[];
     final now = DateTime.now();
 
-    // Iteramos cada día de la semana configurada
-    var current = weekStart;
-    while (!current.isAfter(weekEnd)) {
-      final weekday = current.weekday; // 1=lun … 7=dom
+    // ── Días laborables L–V ──────────────────────────────────────────────────
+    final workDays = <DayAttendance>[];
+    // ── Fin de semana Sáb/Dom (con registros) ────────────────────────────────
+    final weekendDays = <DayAttendance>[];
 
-      if (!_isWorkday(weekday, config)) {
-        days.add(DayAttendance(
-          date: current,
-          status: DayStatus.nonWorkday,
-        ));
-      } else if (current.isAfter(now)) {
-        days.add(DayAttendance(
-          date: current,
-          status: DayStatus.future,
-        ));
+    DateTime current = weekStart;
+    while (!current.isAfter(weekEnd)) {
+      final wd = current.weekday; // 1=lun … 7=dom
+
+      if (_isConfiguredWorkday(wd, config)) {
+        // Día laborable según la configuración del cliente
+        if (current.isAfter(now)) {
+          workDays.add(DayAttendance(date: current, status: DayStatus.future));
+        } else {
+          workDays.add(
+              _calcWorkday(current, _logsForDay(userLogs, current), config));
+        }
       } else {
+        // Fuera de la semana laboral configurada → puede ser sáb/dom
+        // Solo lo procesamos si tiene registros
         final dayLogs = _logsForDay(userLogs, current);
-        days.add(_calculateDay(current, dayLogs, config));
+        if (dayLogs.length >= 2 && !current.isAfter(now)) {
+          // Hay suficiente info para calcular tiempo trabajado
+          final day = _calcWeekendDay(current, dayLogs);
+          weekendDays.add(day);
+        }
+        // Si no hay registros o solo hay 1 → lo omitimos completamente
       }
 
       current = current.add(const Duration(days: 1));
     }
 
-    return _buildWeekResult(
+    return _buildResult(
       userId: userId,
       userName: userName,
       weekStart: weekStart,
       weekEnd: weekEnd,
-      days: days,
+      workDays: workDays,
+      weekendDays: weekendDays,
       config: config,
     );
   }
 
-  // ── Cálculo por día ────────────────────────────────────────────────────────
+  // ── Cálculo día laborable (L–V) ───────────────────────────────────────────
 
-  DayAttendance _calculateDay(
+  DayAttendance _calcWorkday(
     DateTime date,
     List<AccessLog> dayLogs,
     WorkScheduleConfig config,
@@ -84,16 +99,11 @@ class AttendanceCalculator {
       return DayAttendance(date: date, status: DayStatus.absent);
     }
 
-    // Ordenamos cronológicamente
     dayLogs.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    // Primer acceso = entrada, último = salida
     final entry = dayLogs.first.timestamp;
     final exit = dayLogs.length > 1 ? dayLogs.last.timestamp : null;
 
     if (exit == null || _isSameMinute(entry, exit)) {
-      // Solo un registro: no podemos saber si es entrada o salida
-      // Asumimos que es entrada y falta la salida
       return DayAttendance(
         date: date,
         status: DayStatus.missingExit,
@@ -101,51 +111,23 @@ class AttendanceCalculator {
       );
     }
 
-    // ── Horario oficial del día ──────────────────────────────────────────────
-    final scheduledStart = DateTime.utc(
-      date.year,
-      date.month,
-      date.day,
-      config.workStartTime.inHours,
-      config.workStartTime.inMinutes % 60,
-    );
-    final scheduledEnd = DateTime.utc(
-      date.year,
-      date.month,
-      date.day,
-      config.workEndTime.inHours,
-      config.workEndTime.inMinutes % 60,
-    );
+    final scheduledStart = _timeOnDay(date, config.workStartTime);
+    final scheduledEnd = _timeOnDay(date, config.workEndTime);
     final lateThreshold =
         scheduledStart.add(Duration(minutes: config.graceMinutes));
-    final earlyLeaveThreshold =
-        scheduledEnd.add(Duration(minutes: config.exitGraceMinutes));
+    final earlyThreshold =
+        scheduledEnd.subtract(Duration(minutes: config.exitGraceMinutes));
 
-    // ── Puntualidad ──────────────────────────────────────────────────────────
-    final isPunctualEntry = entry.isBefore(lateThreshold);
-    final isPunctualExit = exit.isAfter(earlyLeaveThreshold);
+    final isPunctualEntry = !entry.isAfter(lateThreshold);
+    final isPunctualExit = !exit.isBefore(earlyThreshold);
 
-    // ── Horas extra ──────────────────────────────────────────────────────────
-    // Entrada anticipada: minutos antes del horario oficial (no del umbral de gracia)
     final earlyEntryMinutes = entry.isBefore(scheduledStart)
         ? scheduledStart.difference(entry).inMinutes
         : 0;
-
-    // Salida tardía: minutos después del horario oficial de salida
     final lateExitMinutes = exit.isAfter(scheduledEnd)
         ? exit.difference(scheduledEnd).inMinutes
         : 0;
 
-    // Las horas extra solo existen si el día es completo (entrada Y salida) y si sale después del horario oficial.
-    final overtimeMinutes = (exit.difference(entry) > config.netDailyHours)
-        ? (exit.difference(entry).inMinutes - config.netDailyHours.inMinutes)
-        : 0;
-    log(
-      'Día ${date.toIso8601String()}: entry=$entry, exit=$exit, '
-      "netDailyHours=${config.netDailyHours.inMinutes}, "
-      "difference=${exit.difference(entry).inMinutes}, "
-      'overtimeMinutes=$overtimeMinutes',
-    );
     return DayAttendance(
       date: date,
       status: DayStatus.complete,
@@ -153,37 +135,54 @@ class AttendanceCalculator {
       exitTime: exit,
       earlyEntryMinutes: earlyEntryMinutes,
       lateExitMinutes: lateExitMinutes,
-      overtimeMinutes: overtimeMinutes,
+      overtimeMinutes: earlyEntryMinutes + lateExitMinutes,
       isPunctualEntry: isPunctualEntry,
       isPunctualExit: isPunctualExit,
     );
   }
 
+  // ── Cálculo día de fin de semana ──────────────────────────────────────────
+
+  /// Para sáb/dom: no hay horario oficial.
+  /// Overtime = tiempo total entre primer y último acceso.
+  /// Sin puntualidad, sin penalización de bono.
+  DayAttendance _calcWeekendDay(DateTime date, List<AccessLog> dayLogs) {
+    dayLogs.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final entry = dayLogs.first.timestamp;
+    final exit = dayLogs.last.timestamp;
+
+    // Tiempo total trabajado ese día en minutos
+    final workedMinutes = exit.difference(entry).inMinutes;
+
+    return DayAttendance(
+      date: date,
+      status: DayStatus.weekend,
+      entryTime: entry,
+      exitTime: exit,
+      overtimeMinutes: workedMinutes,
+      // isPunctualEntry / isPunctualExit quedan false (no aplica)
+    );
+  }
+
   // ── Resumen semanal ────────────────────────────────────────────────────────
 
-  WeekAttendance _buildWeekResult({
+  WeekAttendance _buildResult({
     required int userId,
     required String userName,
     required DateTime weekStart,
     required DateTime weekEnd,
-    required List<DayAttendance> days,
+    required List<DayAttendance> workDays,
+    required List<DayAttendance> weekendDays,
     required WorkScheduleConfig config,
   }) {
-    // Solo días laborables pasados (no futuros, no fin de semana)
-    final workdays = days.where((d) =>
-        d.status != DayStatus.nonWorkday && d.status != DayStatus.future);
+    // Solo días L–V pasados para evaluar el bono
+    final pastWorkdays = workDays.where((d) => d.status != DayStatus.future);
 
-    // ── Reglas del bono ──────────────────────────────────────────────────────
-    // Regla 1: todos los días laborables pasados deben ser completos
-    final hasIncompleteDays = workdays.any((d) => d.invalidatesBonus);
-
-    // Regla 2: en todos los días completos debe haber sido puntual en entrada
+    final hasIncompleteDays = pastWorkdays.any((d) => d.invalidatesBonus);
     final hasLateEntry =
-        workdays.where((d) => d.isComplete).any((d) => !d.isPunctualEntry);
-
-    // Regla 3: en todos los días completos debe haber sido puntual en salida
+        pastWorkdays.where((d) => d.isComplete).any((d) => !d.isPunctualEntry);
     final hasEarlyExit =
-        workdays.where((d) => d.isComplete).any((d) => !d.isPunctualExit);
+        pastWorkdays.where((d) => d.isComplete).any((d) => !d.isPunctualExit);
 
     final failReasons = [
       if (hasIncompleteDays) BonusFailReason.incompleteDays,
@@ -191,53 +190,58 @@ class AttendanceCalculator {
       if (hasEarlyExit) BonusFailReason.earlyExit,
     ];
 
-    final BonusFailReason failReason;
-    if (failReasons.isEmpty) {
-      failReason = BonusFailReason.none;
-    } else if (failReasons.length == 1) {
-      failReason = failReasons.first;
-    } else {
-      failReason = BonusFailReason.multiple;
-    }
+    final failReason = switch (failReasons.length) {
+      0 => BonusFailReason.none,
+      1 => failReasons.first,
+      _ => BonusFailReason.multiple,
+    };
 
     final qualifies = config.bonusEnabled && failReason == BonusFailReason.none;
 
-    // ── Horas extra ──────────────────────────────────────────────────────────
-    // Solo se acumulan en días completos. Si un día está incompleto,
-    // ese día no aporta horas extra (pero los otros días completos sí).
-    final totalOvertime = days
+    // Overtime L–V (solo días completos)
+    final weekdayOvertime = workDays
         .where((d) => d.isComplete)
-        .fold<int>(0, (sum, d) => sum + d.overtimeMinutes);
+        .fold<int>(0, (s, d) => s + d.overtimeMinutes);
+
+    // Overtime fin de semana (todo el tiempo trabajado)
+    final weekendOvertime =
+        weekendDays.fold<int>(0, (s, d) => s + d.overtimeMinutes);
 
     return WeekAttendance(
       userId: userId,
       userName: userName,
       weekStart: weekStart,
       weekEnd: weekEnd,
-      days: days,
+      days: workDays,
+      weekendDays: weekendDays,
       qualifiesForBonus: qualifies,
       bonusFailReason: failReason,
-      totalOvertimeMinutes: totalOvertime,
+      totalOvertimeMinutes: weekdayOvertime + weekendOvertime,
     );
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  bool _isWorkday(int weekday, WorkScheduleConfig config) {
-    // Caso normal: lun(1) a vie(5)
+  bool _isConfiguredWorkday(int weekday, WorkScheduleConfig config) {
     if (config.weekStartDay <= config.weekEndDay) {
       return weekday >= config.weekStartDay && weekday <= config.weekEndDay;
     }
-    // Caso que cruza fin de semana (ej: jue a lun)
     return weekday >= config.weekStartDay || weekday <= config.weekEndDay;
   }
 
-  List<AccessLog> _logsForDay(List<AccessLog> logs, DateTime day) {
-    return logs.where((l) {
-      final t = l.timestamp;
-      return t.year == day.year && t.month == day.month && t.day == day.day;
-    }).toList();
-  }
+  DateTime _timeOnDay(DateTime day, Duration time) => DateTime.utc(
+        day.year,
+        day.month,
+        day.day,
+        time.inHours,
+        time.inMinutes % 60,
+      );
+
+  List<AccessLog> _logsForDay(List<AccessLog> logs, DateTime day) =>
+      logs.where((l) {
+        final t = l.timestamp;
+        return t.year == day.year && t.month == day.month && t.day == day.day;
+      }).toList();
 
   bool _isSameMinute(DateTime a, DateTime b) =>
       a.year == b.year &&

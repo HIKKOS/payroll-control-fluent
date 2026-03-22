@@ -1,7 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:intl/intl.dart';
 import '../../../settings/domain/entities/work_schedule_config.dart';
-import '../../domain/usecases/week_range_helper.dart';
+import '../../domain/entities/week_range_helper.dart';
 
 class WeekSelectorWidget extends StatelessWidget {
   final DateTime selectedStart;
@@ -19,7 +19,7 @@ class WeekSelectorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final weeks = WeekRangeHelper.recentWeeks(config, count: 12);
+    final weeks = WeekRangeHelper.recentWeeks(config.copyWith(weekEndDay: DateTime.sunday), count: 12);
     final fmt   = DateFormat('d MMM', 'es_MX');
 
     final idx = weeks.indexWhere((w) =>

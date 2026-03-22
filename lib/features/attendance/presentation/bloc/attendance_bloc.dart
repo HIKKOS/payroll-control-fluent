@@ -8,7 +8,7 @@ import '../../../settings/domain/repositories/settings_repository.dart';
 import '../../domain/entities/week_attendance.dart';
 import '../../domain/usecases/get_week_attendance.dart';
 import '../../domain/usecases/sync_logs_locally.dart';
-import '../../domain/usecases/week_range_helper.dart';
+import '../../domain/entities/week_range_helper.dart';
 import '../../../../core/error/failures.dart';
 
 part 'attendance_event.dart';
@@ -59,7 +59,9 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     _config = config;
 
     _currentWeekStart = WeekRangeHelper.currentWeekStart(config);
-    _currentWeekEnd = WeekRangeHelper.currentWeekEnd(config);
+    _currentWeekEnd = WeekRangeHelper.currentWeekEnd(config.copyWith(
+      weekEndDay: DateTime.sunday
+    ));
 
     await _loadWeek(emit,
         useLocalLogs: event.useLocalLogs, isCurrentWeek: true);

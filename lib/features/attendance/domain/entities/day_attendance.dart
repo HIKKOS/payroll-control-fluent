@@ -1,30 +1,30 @@
 import 'package:equatable/equatable.dart';
 
-/// Estado de un día laboral para un empleado.
 enum DayStatus {
-  /// Día completo: tiene entrada y salida válidas.
+  /// Día laborable completo: entrada y salida registradas.
   complete,
 
-  /// Solo tiene entrada (falta salida) — día inválido.
+  /// Solo entrada registrada — falta salida.
   missingExit,
 
-  /// Solo tiene salida (falta entrada) — día inválido.
+  /// Solo salida registrada — falta entrada.
   missingEntry,
 
-  /// No hay ningún registro — ausente.
+  /// Sin ningún registro — ausente.
   absent,
 
-  /// Día no laborable (fin de semana según config).
+  /// Sábado o domingo con registros: todo el tiempo cuenta como extra.
+  /// No tiene concepto de puntualidad ni invalida el bono.
+  weekend,
+
+  /// Sábado o domingo sin registros — no se muestra en UI de semana laboral.
   nonWorkday,
 
   /// Día futuro — aún no ha ocurrido.
   future,
 }
 
-/// Resumen procesado de la asistencia de UN empleado en UN día.
-///
-/// Este objeto es el resultado de aplicar las reglas de negocio
-/// a los [AccessLog] crudos del dispositivo.
+/// Resumen de la asistencia de UN empleado en UN día.
 class DayAttendance extends Equatable {
   final DateTime date;
   final DayStatus status;
@@ -35,22 +35,26 @@ class DayAttendance extends Equatable {
   /// Hora real de salida (último acceso del día).
   final DateTime? exitTime;
 
-  /// Minutos de llegada anticipada antes del horario oficial.
-  /// Positivo = llegó antes. 0 = llegó después o dentro del tiempo de gracia.
+  /// Minutos trabajados antes del horario oficial de entrada.
+  /// Solo aplica a días laborables (L–V).
   final int earlyEntryMinutes;
 
-  /// Minutos de permanencia extra después del horario oficial de salida.
-  /// Positivo = salió después. 0 = salió antes o dentro del tiempo de gracia.
+  /// Minutos trabajados después del horario oficial de salida.
+  /// Solo aplica a días laborables (L–V).
   final int lateExitMinutes;
 
-  /// Minutos totales de horas extra acumuladas en este día.
-  /// = earlyEntryMinutes + lateExitMinutes (solo si el día es [complete]).
+  /// Minutos totales de horas extra en este día.
+  ///
+  /// Para días L–V completos: earlyEntryMinutes + lateExitMinutes.
+  /// Para días de fin de semana con registros: duración total (salida – entrada).
   final int overtimeMinutes;
 
-  /// true si el empleado fue puntual en entrada (llegó antes o dentro de la gracia).
+  /// true si llegó antes o dentro del tiempo de gracia de entrada.
+  /// Siempre false para días de fin de semana (no aplica).
   final bool isPunctualEntry;
 
-  /// true si el empleado fue puntual en salida (salió después o dentro de la gracia inversa).
+  /// true si salió después o dentro del tiempo de gracia de salida.
+  /// Siempre false para días de fin de semana (no aplica).
   final bool isPunctualExit;
 
   const DayAttendance({
@@ -65,10 +69,12 @@ class DayAttendance extends Equatable {
     this.isPunctualExit = false,
   });
 
-  /// El día tiene entrada Y salida registradas.
   bool get isComplete => status == DayStatus.complete;
 
-  /// El día invalida el bono (ausente o registro incompleto).
+  bool get isWeekend => status == DayStatus.weekend;
+
+  /// El día invalida el bono (solo aplica a días L–V).
+  /// Los días de fin de semana nunca invalidan el bono.
   bool get invalidatesBonus =>
       status == DayStatus.absent ||
       status == DayStatus.missingEntry ||
