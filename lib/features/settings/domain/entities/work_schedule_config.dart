@@ -49,8 +49,8 @@ class WorkScheduleConfig extends Equatable {
   const WorkScheduleConfig({
     this.weekStartDay = DateTime.monday,
     this.weekEndDay = DateTime.friday,
-    this.workStartTime = const Duration(hours: 8),
-    this.workEndTime = const Duration(hours: 17,minutes:30),
+    this.workStartTime = const Duration(hours: 7,minutes: 30),
+    this.workEndTime = const Duration(hours: 17),
     this.lunchDuration = const Duration(minutes: 30),
     this.graceMinutes = 5,
     this.exitGraceMinutes = 5,
