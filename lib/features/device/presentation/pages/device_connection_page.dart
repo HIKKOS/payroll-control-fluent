@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:nomina_control/core/config/app_config.dart';
 import 'package:nomina_control/core/theme/app_colors.dart';
 
 import '../../../../core/theme/app_theme.dart';
@@ -29,8 +30,8 @@ class _ConnectionView extends StatefulWidget {
 }
 
 class _ConnectionViewState extends State<_ConnectionView> {
-  final _hostCtrl  = TextEditingController(text: '127.0.0.1');
-  final _portCtrl  = TextEditingController(text: '3001');
+  final _hostCtrl  = TextEditingController(text: AppConfig.baseURL);
+  final _portCtrl  = TextEditingController(text: AppConfig.port);
   final _loginCtrl = TextEditingController(text: 'admin');
   final _passCtrl  = TextEditingController(text: 'admin');
   bool _obscure    = true;

@@ -16,4 +16,9 @@ class AppConfig {
   // ── Nombres de objetos en la API ──────────────────────────────────────────
   static const String userObject          = 'users';
   static const String accessLogsObject          = 'access_logs';
+
+  static const String baseURL = '192.168.1.250';
+  static const String? port = null;
+
+
 }
